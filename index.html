@@ -258,7 +258,7 @@
         <button class="btn" id="btn-dec" onclick="change(-1)" disabled>−</button>
         <button class="btn" id="btn-inc" onclick="change(1)"  disabled>+</button>
         <button class="btn btn-reset"    onclick="tryReset()"  disabled id="btn-rst">RESET</button>
-        <button class="btn btn-reset"    onclick="doLock()" id="btn-rst">Lock</button>
+        <button class="btn btn-reset"    onclick="doLock()"   disabled  id="btn-lck">Lock</button>
       </div>
 
       <!-- PIN lock -->
@@ -421,13 +421,6 @@ async function tryReset(){
   await saveCounter();
 }
 
-  async function tryLock(){
-  if(unlocked)  {unlocked = false;}
-  statusEl.textContent = 'Locking';
-  renderCounter();
-  await saveCounter();
-}
-
 /* ══════════════════════════════════════════════
    PIN LOCK SYSTEM
 ══════════════════════════════════════════════ */
@@ -480,7 +473,7 @@ function doUnlock(){
   unlockExpiry = Date.now() + UNLOCK_DURATION;
 
   // enable buttons
-  ['btn-dec','btn-inc','btn-rst'].forEach(id=>{
+  ['btn-dec','btn-inc','btn-rst','btn-lck'].forEach(id=>{
     document.getElementById(id).disabled = false;
   });
 
@@ -512,7 +505,7 @@ function doLock(){
   pinInput = '';
   if(timerInterval){ clearInterval(timerInterval); timerInterval=null; }
 
-  ['btn-dec','btn-inc','btn-rst'].forEach(id=>{
+  ['btn-dec','btn-inc','btn-rst','btn-lck'].forEach(id=>{
     document.getElementById(id).disabled = true;
   });
 
