@@ -258,7 +258,6 @@
         <button class="btn" id="btn-dec" onclick="change(-1)" disabled>−</button>
         <button class="btn" id="btn-inc" onclick="change(1)"  disabled>+</button>
         <button class="btn btn-reset"    onclick="tryReset()"  disabled id="btn-rst">RESET</button>
-        <button class="btn btn-reset"    onclick="doLock()"   disabled  id="btn-lck">Lock</button>
       </div>
 
       <!-- PIN lock -->
@@ -359,17 +358,17 @@
 
 <script>
 /* ══════════════════════════════════════════════
-   STORAGE KEYS
+   BACKEND CONFIG — set your Render URL here
 ══════════════════════════════════════════════ */
-const COUNTER_KEY  = 'dababati-counter-v1';   // shared, permanent
-const COMMENTS_KEY = 'dababati-comments-v3';  // shared, 3-day TTL
+const API = 'https://YOUR-APP-NAME.onrender.com';  // ← replace after deploying
+
 const TTL = 3 * 24 * 60 * 60 * 1000;
 const MAX_COUNT = 999;
 const CORRECT_PIN = '4721';
-const UNLOCK_DURATION = 30 * 1000; // 30 seconds session unlock
+const UNLOCK_DURATION = 5 * 60 * 1000; // 5 minutes session unlock
 
 /* ══════════════════════════════════════════════
-   COUNTER — persistent shared storage
+   COUNTER — backed by PostgreSQL via REST API
 ══════════════════════════════════════════════ */
 let count = 0;
 const counterEl = document.getElementById('counter');
@@ -390,17 +389,21 @@ function renderCounter(){
 
 async function loadCounter(){
   try {
-    const r = await window.storage.get(COUNTER_KEY, true);
-    if(r && r.value !== undefined && r.value !== null){
-      const v = parseInt(r.value, 10);
-      if(!isNaN(v)) count = Math.max(0, Math.min(MAX_COUNT, v));
-    }
+    const r = await fetch(`${API}/counter`);
+    const data = await r.json();
+    if(!isNaN(data.value)) count = Math.max(0, Math.min(MAX_COUNT, data.value));
   } catch(e){ count = 0; }
   renderCounter();
 }
 
 async function saveCounter(){
-  try { await window.storage.set(COUNTER_KEY, String(count), true); } catch(e){}
+  try {
+    await fetch(`${API}/counter`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ value: count })
+    });
+  } catch(e){}
 }
 
 async function change(d){
@@ -473,7 +476,7 @@ function doUnlock(){
   unlockExpiry = Date.now() + UNLOCK_DURATION;
 
   // enable buttons
-  ['btn-dec','btn-inc','btn-rst','btn-lck'].forEach(id=>{
+  ['btn-dec','btn-inc','btn-rst'].forEach(id=>{
     document.getElementById(id).disabled = false;
   });
 
@@ -505,7 +508,7 @@ function doLock(){
   pinInput = '';
   if(timerInterval){ clearInterval(timerInterval); timerInterval=null; }
 
-  ['btn-dec','btn-inc','btn-rst','btn-lck'].forEach(id=>{
+  ['btn-dec','btn-inc','btn-rst'].forEach(id=>{
     document.getElementById(id).disabled = true;
   });
 
@@ -531,7 +534,7 @@ const wh=[
 (function aW(){ wa=(wa+3)%360; wh.forEach(w=>{ if(w.el) w.el.setAttribute('transform',`rotate(${wa} ${w.cx} ${w.cy})`); }); requestAnimationFrame(aW); })();
 
 /* ══════════════════════════════════════════════
-   COMMENTS
+   COMMENTS — backed by PostgreSQL via REST API
 ══════════════════════════════════════════════ */
 let comments    = [];
 let replyState  = null;
@@ -540,19 +543,19 @@ let sessionLiked = new Set();
 async function loadComments(){
   setFeedStatus('LOADING…', true);
   try {
-    const r = await window.storage.get(COMMENTS_KEY, true);
-    if(r && r.value) comments = JSON.parse(r.value)||[];
+    const r = await fetch(`${API}/comments`);
+    const data = await r.json();
+    comments = data.comments || [];
   } catch(e){ comments=[]; }
-  prune();
+  updateBadge();
   render();
   setFeedStatus('');
 }
 
-async function saveComments(){
-  try { await window.storage.set(COMMENTS_KEY, JSON.stringify(comments), true); } catch(e){}
-}
+// saveComments is no longer needed — each action hits the API directly
 
 function prune(){
+  // Server handles pruning; client-side prune only for badge display
   const cut = Date.now()-TTL;
   comments = comments.filter(c=>c.ts>cut);
   comments.forEach(c=>{ if(c.replies) c.replies=c.replies.filter(r=>r.ts>cut); });
@@ -624,6 +627,8 @@ function startReply(id,name){
   document.getElementById('reply-banner').classList.add('active');
   document.getElementById('reply-target-label').textContent=name;
   document.getElementById('compose-area').classList.add('reply-mode');
+  // Clear name field when replying
+  document.getElementById('inp-name').value='';
   document.getElementById('inp-text').focus();
   document.getElementById('inp-text').scrollIntoView({behavior:'smooth',block:'nearest'});
 }
@@ -633,39 +638,77 @@ function cancelReply(){
   document.getElementById('compose-area').classList.remove('reply-mode');
 }
 
-function toggleLike(id,parentId){
+async function toggleLike(id, parentId){
+  const isLiked = sessionLiked.has(id);
+  const delta   = isLiked ? -1 : 1;
+
+  // Optimistic UI update
   let target;
   if(parentId){ const par=comments.find(c=>c.id===parentId); target=par&&par.replies?par.replies.find(r=>r.id===id):null; }
   else target=comments.find(c=>c.id===id);
   if(!target) return;
-  const isLiked=sessionLiked.has(id);
+
   if(isLiked){ sessionLiked.delete(id); target.likes=Math.max(0,(target.likes||0)-1); }
   else{ sessionLiked.add(id); target.likes=(target.likes||0)+1; }
+
   const btn=document.getElementById('lb-'+id);
   const lc=document.getElementById('lc-'+id);
   if(btn){ const nl=sessionLiked.has(id); btn.className='action-btn'+(nl?' liked':''); btn.querySelector('.like-icon').textContent=nl?'❤':'🤍'; btn.lastElementChild.textContent=target.likes===1?'LIKE':'LIKES'; }
   if(lc) lc.textContent=target.likes;
-  saveComments();
+
+  // Persist to DB
+  try {
+    await fetch(`${API}/comments/${id}/like`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ delta })
+    });
+  } catch(e){}
 }
 
 async function submitComment(){
-  const name=document.getElementById('inp-name').value.trim();
-  const text=document.getElementById('inp-text').value.trim();
-  if(!text){ flash(document.getElementById('inp-text')); return; }
-  const id=Date.now().toString(36)+Math.random().toString(36).slice(2,5);
-  const entry={id,name:name||'ANON',text,ts:Date.now(),likes:0,replies:[]};
-  if(replyState){
-    entry.replyToName=replyState.name;
-    const par=comments.find(c=>c.id===replyState.id);
-    if(par){ if(!par.replies)par.replies=[]; par.replies.push(entry); }
-    cancelReply();
-  } else {
-    if(comments.length>=120) comments.sort((a,b)=>a.ts-b.ts).splice(0,1);
-    comments.unshift(entry);
-  }
-  document.getElementById('inp-text').value='';
+  const nameEl = document.getElementById('inp-name');
+  const textEl = document.getElementById('inp-text');
+  const name = nameEl.value.trim();
+  const text = textEl.value.trim();
+
+  // Name is required for both comments and replies
+  if(!name){ flash(nameEl); nameEl.focus(); return; }
+  // Text is always required
+  if(!text){ flash(textEl); return; }
+
+  const id = Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+
+  const body = {
+    id,
+    name,
+    text,
+    parentId:     replyState ? replyState.id   : undefined,
+    replyToName:  replyState ? replyState.name : undefined
+  };
+
+  try {
+    const r = await fetch(`${API}/comments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const entry = await r.json();
+    if(!r.ok) { console.error(entry); return; }
+
+    if(replyState){
+      const par = comments.find(c=>c.id===replyState.id);
+      if(par){ if(!par.replies) par.replies=[]; par.replies.push({...entry, replies:[]}); }
+      cancelReply();
+    } else {
+      if(comments.length>=120) comments.sort((a,b)=>a.ts-b.ts).splice(0,1);
+      comments.unshift({...entry, replies:[]});
+    }
+  } catch(e){ console.error(e); return; }
+
+  textEl.value='';
+  nameEl.value='';
   document.getElementById('char-count').textContent='0 / 500';
-  await saveComments();
   render();
   document.getElementById('feed').scrollTop=0;
 }
@@ -685,14 +728,22 @@ document.getElementById('inp-text').addEventListener('keydown',function(e){ if(e
 /* polling */
 async function pollComments(){
   try{
-    const r=await window.storage.get(COMMENTS_KEY,true);
-    if(r&&r.value){ const fresh=JSON.parse(r.value)||[]; if(JSON.stringify(fresh)!==JSON.stringify(comments)){ comments=fresh; prune(); render(); } }
+    const r = await fetch(`${API}/comments`);
+    const data = await r.json();
+    const fresh = data.comments || [];
+    if(JSON.stringify(fresh) !== JSON.stringify(comments)){
+      comments = fresh;
+      updateBadge();
+      render();
+    }
   }catch(e){}
 }
 async function pollCounter(){
   try{
-    const r=await window.storage.get(COUNTER_KEY,true);
-    if(r&&r.value!==undefined){ const v=parseInt(r.value,10); if(!isNaN(v)&&v!==count){ count=Math.max(0,Math.min(MAX_COUNT,v)); renderCounter(); } }
+    const r = await fetch(`${API}/counter`);
+    const data = await r.json();
+    const v = parseInt(data.value, 10);
+    if(!isNaN(v) && v !== count){ count=Math.max(0,Math.min(MAX_COUNT,v)); renderCounter(); }
   }catch(e){}
 }
 setInterval(pollComments, 20000);
