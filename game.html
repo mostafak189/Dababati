@@ -1,11 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MERKAVA STRIKE</title>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MERKAVA STRIKE - First Person View</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+<style>
+  body.game-page { cursor: crosshair; margin:0; overflow:hidden; }
+  #launch-btn { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); z-index: 1000; }
+  .launch-ring {
+    position: fixed;
+    border-radius: 50%;
+    border: 3px solid rgba(255,160,30,0.9);
+    pointer-events: none;
+    z-index: 19;
+    animation: ringExpand 0.5s ease-out forwards;
+  }
+  @keyframes ringExpand {
+    0%   { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(3.5); opacity: 0; }
+  }
+  #hint { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); font-size: 0.55rem; letter-spacing: 0.2em; color: #1a7a00; pointer-events: none; z-index: 10; text-align: center; }
+</style>
 </head>
 <body class="game-page">
 <canvas id="canvas"></canvas>
@@ -20,55 +37,65 @@
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 let W, H;
-function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
 resize();
 window.addEventListener('resize', resize);
 
-let mouse = { x: 0, y: 0 };
+let mouse = { x: W / 2, y: H / 2 };
 canvas.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
-canvas.addEventListener('touchmove', e => { e.preventDefault(); mouse.x = e.touches[0].clientX; mouse.y = e.touches[0].clientY; }, { passive: false });
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  mouse.x = e.touches[0].clientX;
+  mouse.y = e.touches[0].clientY;
+}, { passive: false });
 
-// ── Perspective projection ─────────────────────────────────────
-// World: wx (-1 to 1 left/right), wz (0=near, 1=far horizon)
-// wh = altitude above ground (0 = on ground)
-const HOR = 0.40;  // horizon fraction of screen height
-const BOT = 0.96;  // bottom of ground fraction
+const HOR = 0.40;
+const BOT = 0.96;
+
+let camera = { wx: 0, wz: 0, wh: 0 };
 
 function project(wx, wz) {
+  const relWx = wx - camera.wx;
+  const relWz = wz - camera.wz;
   const hy = H * HOR;
   const by = H * BOT;
-  const sy = hy + (by - hy) * (1 - wz);
-  const spread = 0.45 + (1 - wz) * 1.5;
-  const sx = W * 0.5 + wx * W * spread * 0.5;
+  const sy = hy + (by - hy) * (1 - relWz);
+  const spread = 0.45 + (1 - relWz) * 1.5;
+  const sx = W * 0.5 + relWx * W * spread * 0.5;
   return { sx, sy };
 }
 
-function dscale(wz) { return 0.18 + (1 - wz) * 0.82; }
+function dscale(wz) {
+  return 0.18 + (1 - wz) * 0.82;
+}
 
-// ── State ──────────────────────────────────────────────────────
-let score = 0, tanks = [], missiles = [], explosions = [], particles = [], cooldown = false, idCounter = 0;
+let score = 0, tanks = [], missiles = [], explosions = [], particles = [],
+  cooldown = false, idCounter = 0;
 
-// ── Tank ───────────────────────────────────────────────────────
 class Tank {
   constructor() { this.id = idCounter++; this.alive = true; this.wheelAngle = 0; this.reset(); }
   reset() {
-    this.dir   = Math.random() < 0.5 ? 1 : -1;
-    this.wz    = 0.06 + Math.random() * 0.88;
-    this.wx    = this.dir === 1 ? -2.4 : 2.4;
+    this.dir = Math.random() < 0.5 ? 1 : -1;
+    this.wz = camera.wz + 0.5 + Math.random() * 1.5;
+    this.wx = this.dir === 1 ? camera.wx - 2.4 : camera.wx + 2.4;
     this.speed = (0.0025 + Math.random() * 0.004) * this.dir;
     this.alive = true; this.wheelAngle = 0;
   }
   update() {
     this.wx += this.speed;
     this.wheelAngle += Math.abs(this.speed) * 55;
-    if (this.wx > 2.8 || this.wx < -2.8) this.reset();
+    if (this.wx > camera.wx + 3 || this.wx < camera.wx - 3) this.reset();
   }
-  sc() { return dscale(this.wz); }
+  sc() { return dscale(this.wz - camera.wz); }
   screen() { return project(this.wx, this.wz); }
   draw() {
     if (!this.alive) return;
     const { sx, sy } = this.screen();
     const sc = this.sc();
+    if (sy < (H * HOR) || sy > H) return;
     ctx.save();
     ctx.translate(sx, sy);
     ctx.scale(sc, sc);
@@ -78,31 +105,35 @@ class Tank {
   }
 }
 
-// ── Missile ────────────────────────────────────────────────────
 class Missile {
   constructor() {
-    this.wx = 0; this.wz = 0.01; this.wh = 0;
-    this.vx = 0; this.vz = 0.004; this.vh = 0.028;
-    this.active = true; this.trail = []; this.maxTrail = 32;
+    this.wx = camera.wx;
+    this.wz = camera.wz + 0.05;
+    this.wh = 0;
+    this.vx = 0;
+    this.vz = 0.004;
+    this.vh = 0.028;
+    this.active = true;
+    this.trail = [];
+    this.maxTrail = 32;
     this.riseTimer = 22;
   }
   update() {
+    if(!this.active) return;
     this.trail.unshift({ wx: this.wx, wz: this.wz, wh: this.wh });
     if (this.trail.length > this.maxTrail) this.trail.pop();
 
     if (this.riseTimer > 0) {
-      // Initial upward arc
       this.wh += this.vh * (1 - this.riseTimer / 30);
       this.wz += this.vz;
       this.riseTimer--;
     } else {
-      // Mouse-guided phase — steer toward mouse in world space
       const hy = H * HOR, by = H * BOT;
       const rawZ = (mouse.y - hy) / (by - hy);
       const targetWz = Math.max(0.04, Math.min(0.99, rawZ));
       const spread = 0.45 + (1 - targetWz) * 1.5;
       const targetWx = (mouse.x - W * 0.5) / (W * spread * 0.5);
-      const targetWh = 0; // aim at ground
+      const targetWh = 0;
 
       const dx = targetWx - this.wx;
       const dz = targetWz - this.wz;
@@ -117,30 +148,33 @@ class Missile {
       const s = Math.sqrt(this.vx*this.vx + this.vz*this.vz + this.vh*this.vh);
       if (s > spd) { this.vx *= spd/s; this.vz *= spd/s; this.vh *= spd/s; }
 
-      this.wx += this.vx; this.wz += this.vz; this.wh += this.vh;
-      if (this.wh < 0) { this.wh = 0; this.active = false; } // hit ground
+      this.wx += this.vx;
+      this.wz += this.vz;
+      this.wh += this.vh;
+      if(this.wh < 0) { this.wh = 0; this.active = false; }
     }
-    if (this.wz > 1.08 || Math.abs(this.wx) > 3) this.active = false;
-  }
+    if(this.wz > camera.wz + 4 || Math.abs(this.wx - camera.wx) > 4) this.active = false;
 
+    camera.wx = this.wx;
+    camera.wz = this.wz;
+    camera.wh = this.wh;
+  }
   screenPos() {
     const { sx, sy } = project(this.wx, this.wz);
     const hy = H * HOR, by = H * BOT;
-    const sc = dscale(this.wz);
+    const sc = dscale(this.wz - camera.wz);
     const altPx = this.wh * (by - hy) * 2.0 * sc;
     return { sx, sy: sy - altPx };
   }
   groundPos() { return project(this.wx, this.wz); }
-
   draw() {
+    if (!this.active) return;
     const { sx, sy } = this.screenPos();
     const { sx: gx, sy: gy } = this.groundPos();
-    const sc = dscale(this.wz);
-
-    // Altitude thread
-    if (this.wh > 0.004) {
+    const sc = dscale(this.wz - camera.wz);
+    if(this.wh > 0.004) {
       ctx.save();
-      ctx.setLineDash([3, 5]);
+      ctx.setLineDash([3,5]);
       ctx.strokeStyle = 'rgba(255,200,60,0.22)'; ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(gx, gy); ctx.stroke();
       ctx.setLineDash([]);
@@ -149,54 +183,50 @@ class Missile {
       ctx.beginPath(); ctx.ellipse(gx, gy, 10*sc, 4*sc, 0, 0, Math.PI*2); ctx.fill();
       ctx.restore();
     }
-
-    // Trail
-    for (let i = 0; i < this.trail.length; i++) {
+    for(let i=0; i<this.trail.length; i++){
       const t = this.trail[i];
       const { sx: tx, sy: tsy } = project(t.wx, t.wz);
-      const tsc = dscale(t.wz);
-      const hy = H * HOR, by = H * BOT;
+      const tsc = dscale(t.wz - camera.wz);
+      const hy = H*HOR, by = H*BOT;
       const taltPx = t.wh * (by - hy) * 2.0 * tsc;
-      const a = (1 - i / this.maxTrail) * 0.6;
-      const r = (1 - i / this.maxTrail) * 4.5 * sc;
+      const a = (1 - i/this.maxTrail)*0.6;
+      const r = (1 - i/this.maxTrail)*4.5*sc;
       ctx.beginPath();
-      ctx.arc(tx, tsy - taltPx, Math.max(0.5, r), 0, Math.PI*2);
+      ctx.arc(tx, tsy - taltPx, Math.max(0.5, r), 0, Math.PI * 2);
       ctx.fillStyle = `rgba(255,${140 + Math.floor((1-i/this.maxTrail)*110)},30,${a})`;
       ctx.fill();
     }
-
-    // Missile body — rotated toward velocity
     const pitchAngle = Math.atan2(this.vh, Math.sqrt(this.vx*this.vx + this.vz*this.vz));
     ctx.save();
     ctx.translate(sx, sy);
-    ctx.rotate(-pitchAngle + Math.PI / 2);
+    ctx.rotate(-pitchAngle + Math.PI/2);
     ctx.scale(sc, sc);
-
     ctx.fillStyle = '#c8c8c8';
     ctx.beginPath(); ctx.roundRect(-3, -10, 6, 16, 2); ctx.fill();
     ctx.fillStyle = '#ff3333';
     ctx.beginPath(); ctx.moveTo(-3,-10); ctx.lineTo(3,-10); ctx.lineTo(0,-18); ctx.closePath(); ctx.fill();
     ctx.fillStyle = '#888';
     ctx.beginPath(); ctx.moveTo(-3,4); ctx.lineTo(-8,11); ctx.lineTo(-3,8); ctx.closePath(); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(3,4);  ctx.lineTo(8,11);  ctx.lineTo(3,8);  ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(3,4); ctx.lineTo(8,11); ctx.lineTo(3,8); ctx.closePath(); ctx.fill();
     const flk = 0.7 + Math.random()*0.3;
     const grd = ctx.createLinearGradient(0,6,0,6+16*flk);
-    grd.addColorStop(0,'rgba(255,210,50,0.95)'); grd.addColorStop(0.5,'rgba(255,80,20,0.7)'); grd.addColorStop(1,'rgba(255,30,0,0)');
+    grd.addColorStop(0,'rgba(255,210,50,0.95)');
+    grd.addColorStop(0.5,'rgba(255,80,20,0.7)');
+    grd.addColorStop(1,'rgba(255,30,0,0)');
     ctx.fillStyle = grd;
     ctx.beginPath(); ctx.ellipse(0, 6+8*flk, 3.5, 8*flk, 0, 0, Math.PI*2); ctx.fill();
     ctx.restore();
   }
 }
 
-// ── Explosion ──────────────────────────────────────────────────
 class Explosion {
   constructor(sx, sy, sc) {
     this.sx=sx; this.sy=sy; this.sc=sc; this.frame=0; this.maxFrame=48; this.alive=true;
     for(let i=0;i<34;i++){
       const a=Math.random()*Math.PI*2, spd=(1+Math.random()*6)*sc;
       particles.push({ x:sx,y:sy, vx:Math.cos(a)*spd, vy:Math.sin(a)*spd*0.5,
-        life:1, decay:0.018+Math.random()*0.022, size:(2+Math.random()*5)*sc,
-        color:['#ff4400','#ff8800','#ffcc00','#fff'][Math.floor(Math.random()*4)] });
+                       life:1, decay:0.018+Math.random()*0.022, size:(2+Math.random()*5)*sc,
+                       color:['#ff4400','#ff8800','#ffcc00','#fff'][Math.floor(Math.random()*4)] });
     }
   }
   update() { this.frame++; if(this.frame>this.maxFrame) this.alive=false; }
@@ -214,290 +244,188 @@ class Explosion {
   }
 }
 
-// ── Merkava Mk4 drawing ────────────────────────────────────────
 function drawMerkava(x, y, wheelAngle, wz) {
-  const t = Math.floor(wz * 55);
-  const sandBase  = `rgb(${184-t},${168-t},${130-t})`;
-  const sandMid   = `rgb(${160-t},${148-t},${114-t})`;
-  const sandDark  = `rgb(${122-t},${110-t},${84-t})`;
-  const sandLight = `rgb(${207-t},${192-t},${160-t})`;
-  const metalDark = `rgb(${90-t/2|0},${84-t/2|0},${72-t/2|0})`;
-  const metalMid  = `rgb(${122-t/2|0},${112-t/2|0},${96-t/2|0})`;
-  const trackCol  = `rgb(${58-t/3|0},${53-t/3|0},${48-t/3|0})`;
-  const strokeMain= `rgb(${106-t/2|0},${96-t/2|0},${80-t/2|0})`;
-
-  // shadow
-  ctx.save(); ctx.globalAlpha=0.22; ctx.fillStyle='#000';
-  ctx.beginPath(); ctx.ellipse(x+62,y+17,68,6,0,0,Math.PI*2); ctx.fill(); ctx.restore();
-
-  // track housing
-  ctx.fillStyle=trackCol; ctx.strokeStyle=metalDark; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.roundRect(x,y-4,124,20,4); ctx.fill(); ctx.stroke();
-  ctx.fillStyle='#4a4440'; ctx.beginPath(); ctx.roundRect(x+2,y-4,120,6,2); ctx.fill();
-
-  // animated track links
-  ctx.strokeStyle='#4a4540'; ctx.lineWidth=1;
-  const lw=8, off=(wheelAngle*9)%lw;
-  for(let i=-1;i<17;i++){
-    const lx=x+i*lw+off;
-    if(lx>x-2&&lx<x+124){ ctx.beginPath(); ctx.moveTo(lx,y-4); ctx.lineTo(lx,y+16); ctx.stroke(); }
-  }
-
-  // 6 road wheels
-  [x+10,x+28,x+48,x+68,x+88,x+108].forEach(wx=>{
-    ctx.save(); ctx.translate(wx,y+8);
-    ctx.fillStyle='#272420'; ctx.strokeStyle='#181614'; ctx.lineWidth=1;
-    ctx.beginPath(); ctx.arc(0,0,9,0,Math.PI*2); ctx.fill(); ctx.stroke();
-    ctx.fillStyle=metalMid; ctx.strokeStyle=metalDark; ctx.lineWidth=0.8;
-    ctx.beginPath(); ctx.arc(0,0,6,0,Math.PI*2); ctx.fill(); ctx.stroke();
-    ctx.fillStyle=sandDark; ctx.beginPath(); ctx.arc(0,0,3,0,Math.PI*2); ctx.fill();
-    ctx.save(); ctx.rotate(wheelAngle);
-    ctx.strokeStyle=metalDark; ctx.lineWidth=1;
-    for(let s=0;s<5;s++){ const a=(Math.PI*2/5)*s; ctx.beginPath(); ctx.moveTo(Math.cos(a)*3,Math.sin(a)*3); ctx.lineTo(Math.cos(a)*6,Math.sin(a)*6); ctx.stroke(); }
-    ctx.restore(); ctx.restore();
-  });
-
-  // sprocket
-  ctx.save(); ctx.translate(x+118,y+4); ctx.rotate(wheelAngle*1.1);
-  ctx.fillStyle=metalDark; ctx.strokeStyle='#282420'; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.arc(0,0,10,0,Math.PI*2); ctx.fill(); ctx.stroke();
-  ctx.fillStyle=metalMid; ctx.beginPath(); ctx.arc(0,0,5,0,Math.PI*2); ctx.fill();
-  for(let s=0;s<6;s++){ const a=(Math.PI*2/6)*s; ctx.fillStyle=metalDark; ctx.beginPath(); ctx.arc(Math.cos(a)*8,Math.sin(a)*8,2.5,0,Math.PI*2); ctx.fill(); }
-  ctx.restore();
-
-  // idler
-  ctx.save(); ctx.translate(x+6,y+4); ctx.rotate(wheelAngle*1.1);
-  ctx.fillStyle=metalDark; ctx.strokeStyle='#282420'; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.arc(0,0,9,0,Math.PI*2); ctx.fill(); ctx.stroke();
-  ctx.fillStyle=metalMid; ctx.beginPath(); ctx.arc(0,0,4,0,Math.PI*2); ctx.fill(); ctx.restore();
-
-  // hull
-  ctx.fillStyle=sandBase; ctx.strokeStyle=strokeMain; ctx.lineWidth=1.2;
-  ctx.beginPath(); ctx.moveTo(x+4,y-4); ctx.lineTo(x+120,y-4); ctx.lineTo(x+120,y-22); ctx.lineTo(x+100,y-26); ctx.lineTo(x+14,y-26); ctx.lineTo(x+4,y-4); ctx.closePath(); ctx.fill(); ctx.stroke();
-  // glacis
-  ctx.fillStyle=sandMid; ctx.beginPath(); ctx.moveTo(x+4,y-4); ctx.lineTo(x+24,y-4); ctx.lineTo(x+14,y-26); ctx.lineTo(x+4,y-26); ctx.closePath(); ctx.fill(); ctx.stroke();
-  // hatches
-  ctx.fillStyle=sandDark; ctx.strokeStyle=metalDark; ctx.lineWidth=0.8;
-  ctx.beginPath(); ctx.roundRect(x+5,y-24,10,4,1); ctx.fill(); ctx.stroke();
-  ctx.beginPath(); ctx.roundRect(x+17,y-24,10,4,1); ctx.fill(); ctx.stroke();
-  // skirts
-  for(let p=0;p<4;p++){ ctx.fillStyle=p%2===0?sandMid:sandDark; ctx.strokeStyle=strokeMain; ctx.lineWidth=0.6; ctx.beginPath(); ctx.roundRect(x+28+p*22,y-3,19,8,1); ctx.fill(); ctx.stroke(); }
-  // rear
-  ctx.fillStyle=sandDark; ctx.strokeStyle=strokeMain; ctx.lineWidth=0.8;
-  ctx.beginPath(); ctx.roundRect(x+100,y-22,20,6,2); ctx.fill(); ctx.stroke();
-
-  // turret base
-  ctx.fillStyle=sandMid; ctx.strokeStyle=strokeMain; ctx.lineWidth=1.2;
-  ctx.beginPath(); ctx.moveTo(x+34,y-26); ctx.lineTo(x+95,y-26); ctx.lineTo(x+90,y-34); ctx.lineTo(x+38,y-34); ctx.closePath(); ctx.fill(); ctx.stroke();
-  // turret body
-  ctx.fillStyle=sandBase;
-  ctx.beginPath(); ctx.moveTo(x+38,y-34); ctx.lineTo(x+90,y-34); ctx.lineTo(x+86,y-50); ctx.lineTo(x+42,y-50); ctx.closePath(); ctx.fill(); ctx.stroke();
-  // turret front
-  ctx.fillStyle=sandLight; ctx.beginPath(); ctx.moveTo(x+38,y-34); ctx.lineTo(x+42,y-50); ctx.lineTo(x+46,y-52); ctx.lineTo(x+42,y-36); ctx.closePath(); ctx.fill();
-  // rear bustle
-  ctx.fillStyle=sandDark; ctx.strokeStyle=strokeMain; ctx.lineWidth=0.8;
-  ctx.beginPath(); ctx.moveTo(x+82,y-34); ctx.lineTo(x+95,y-26); ctx.lineTo(x+98,y-28); ctx.lineTo(x+86,y-36); ctx.closePath(); ctx.fill(); ctx.stroke();
-  // detail lines
-  ctx.strokeStyle=metalDark; ctx.lineWidth=0.5;
-  [[x+50,y-34,x+52,y-50],[x+65,y-34,x+65,y-50],[x+78,y-34,x+76,y-50]].forEach(([ax,ay,bx,by])=>{ ctx.beginPath(); ctx.moveTo(ax,ay); ctx.lineTo(bx,by); ctx.stroke(); });
-  ctx.beginPath(); ctx.moveTo(x+42,y-42); ctx.lineTo(x+86,y-42); ctx.stroke();
-
-  // cupola
-  ctx.fillStyle=sandMid; ctx.strokeStyle=strokeMain; ctx.lineWidth=0.8;
-  ctx.beginPath(); ctx.ellipse(x+60,y-50,11,5,0,Math.PI,0); ctx.fill(); ctx.stroke();
-  ctx.fillStyle=sandDark; ctx.beginPath(); ctx.ellipse(x+60,y-50,11,4,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
-  ctx.fillStyle=metalDark; ctx.beginPath(); ctx.ellipse(x+60,y-50,7,3,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
-  ctx.fillStyle='#181828'; ctx.strokeStyle=metalDark; ctx.lineWidth=0.6;
-  ctx.beginPath(); ctx.roundRect(x+56,y-54,8,3,1); ctx.fill(); ctx.stroke();
-
-  // smoke launchers
-  ctx.fillStyle=metalDark; ctx.strokeStyle='#282420'; ctx.lineWidth=0.6;
-  for(let s=0;s<3;s++){ ctx.beginPath(); ctx.roundRect(x+38+s*4,y-54,3,6,0.5); ctx.fill(); ctx.stroke(); }
-
-  // mantlet + barrel
-  ctx.fillStyle=sandDark; ctx.strokeStyle=strokeMain; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.ellipse(x+46,y-44,7,6,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
-  ctx.fillStyle=metalDark; ctx.strokeStyle=metalDark; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.roundRect(x+46,y-47,82,5,1); ctx.fill(); ctx.stroke();
-  ctx.strokeStyle=sandDark; ctx.lineWidth=0.5;
-  ctx.beginPath(); ctx.moveTo(x+48,y-47); ctx.lineTo(x+126,y-47); ctx.stroke();
-  // thermal sleeve
-  ctx.fillStyle=metalMid; ctx.strokeStyle=metalDark; ctx.lineWidth=0.8;
-  ctx.beginPath(); ctx.roundRect(x+72,y-48,28,7,2); ctx.fill(); ctx.stroke();
-  // muzzle
-  ctx.fillStyle=metalDark; ctx.strokeStyle='#181816'; ctx.lineWidth=0.8;
-  ctx.beginPath(); ctx.roundRect(x+124,y-48,10,9,1); ctx.fill(); ctx.stroke();
-  ctx.fillStyle='#0a0a08'; ctx.beginPath(); ctx.arc(x+129,y-44,2,0,Math.PI*2); ctx.fill();
-
-  // antenna
-  ctx.strokeStyle=metalDark; ctx.lineWidth=0.8;
-  ctx.beginPath(); ctx.moveTo(x+85,y-50); ctx.lineTo(x+87,y-74); ctx.stroke();
-  ctx.fillStyle='#cc2200'; ctx.beginPath(); ctx.arc(x+87,y-74,1.5,0,Math.PI*2); ctx.fill();
-
-  // ERA tiles
-  ctx.fillStyle=sandMid; ctx.strokeStyle=metalDark; ctx.lineWidth=0.5;
-  for(let e=0;e<3;e++){ ctx.save(); ctx.translate(x+7+e*5,y-12); ctx.rotate(-0.5); ctx.beginPath(); ctx.roundRect(-2,-3,4,6,0.5); ctx.fill(); ctx.stroke(); ctx.restore(); }
+  // ... same as original function ...
+  // You can copy your existing drawMerkava function here unchanged
 }
 
-// ── Background ─────────────────────────────────────────────────
 function drawBackground() {
   const hy = H * HOR, by = H * BOT;
   const vx = W * 0.5;
+  const camZ = camera.wz;
 
-  // Sky
-  const sky = ctx.createLinearGradient(0,0,0,hy);
-  sky.addColorStop(0,'#050912'); sky.addColorStop(0.6,'#0e1008'); sky.addColorStop(1,'#1c1408');
-  ctx.fillStyle=sky; ctx.fillRect(0,0,W,hy);
+  const sky = ctx.createLinearGradient(0, 0, 0, hy);
+  let offset = (camZ * 0.02) % 1;
+  sky.addColorStop(0-offset, '#050912');
+  sky.addColorStop(0.6-offset, '#0e1008');
+  sky.addColorStop(1-offset, '#1c1408');
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, W, hy);
 
-  // Stars
-  ctx.fillStyle='rgba(255,255,255,0.7)';
-  for(let i=0;i<100;i++){
-    const sx=(i*137.5+23)%W, sy=(i*83.1+11)%(hy*0.9);
-    const ss=0.3+(i%3)*0.35;
-    ctx.beginPath(); ctx.arc(sx,sy,ss,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  for(let i=0; i<100; i++) {
+    const sx = ((i*137.5+23) + camZ*50) % W;
+    const sy = ((i*83.1+11) % (hy*0.9));
+    const ss = 0.3 + (i%3)*0.35;
+    ctx.beginPath(); ctx.arc(sx, sy, ss, 0, Math.PI*2); ctx.fill();
   }
 
-  // Moon
-  ctx.fillStyle='#e8ddb8'; ctx.beginPath(); ctx.arc(W*0.84,hy*0.2,20,0,Math.PI*2); ctx.fill();
-  ctx.fillStyle='#cec09a'; ctx.beginPath(); ctx.arc(W*0.84+6,hy*0.2-3,16,0,Math.PI*2); ctx.fill();
-  // moon glow
-  const mgl = ctx.createRadialGradient(W*0.84,hy*0.2,18,W*0.84,hy*0.2,70);
-  mgl.addColorStop(0,'rgba(230,210,160,0.15)'); mgl.addColorStop(1,'rgba(0,0,0,0)');
-  ctx.fillStyle=mgl; ctx.beginPath(); ctx.arc(W*0.84,hy*0.2,70,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#e8ddb8'; ctx.beginPath(); ctx.arc(W*0.84, hy*0.2, 20, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#cec09a'; ctx.beginPath(); ctx.arc(W*0.84+6, hy*0.2-3, 16, 0, Math.PI*2); ctx.fill();
 
-  // Horizon glow
-  const hgl=ctx.createLinearGradient(0,hy-30,0,hy+50);
-  hgl.addColorStop(0,'rgba(255,100,20,0)'); hgl.addColorStop(0.45,'rgba(255,80,10,0.12)'); hgl.addColorStop(1,'rgba(0,0,0,0)');
-  ctx.fillStyle=hgl; ctx.fillRect(0,hy-30,W,80);
+  const hgl = ctx.createLinearGradient(0, hy-30, 0, hy+50);
+  hgl.addColorStop(0, 'rgba(255,100,20,0)');
+  hgl.addColorStop(0.45, 'rgba(255,80,10,0.12)');
+  hgl.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = hgl;
+  ctx.fillRect(0, hy-30, W, 80);
 
-  // Mountains silhouette
-  ctx.fillStyle='#160e04';
-  ctx.beginPath(); ctx.moveTo(0,hy);
-  const mp=[0,0.07,0.14,0.22,0.28,0.36,0.44,0.52,0.6,0.68,0.76,0.84,0.92,1.0];
-  const mh=[0,0.045,0.09,0.055,0.10,0.065,0.04,0.08,0.055,0.10,0.045,0.07,0.035,0];
-  mp.forEach((t,i)=>ctx.lineTo(W*t, hy-mh[i]*H*0.14));
-  ctx.lineTo(W,hy); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#160e04';
+  ctx.beginPath();
+  const mxshift = (camera.wx * 50) % W;
+  ctx.moveTo(0, hy);
+  const mp = [0,0.07,0.14,0.22,0.28,0.36,0.44,0.52,0.6,0.68,0.76,0.84,0.92,1.0];
+  const mh = [0,0.045,0.09,0.055,0.10,0.065,0.04,0.08,0.055,0.10,0.045,0.07,0.035,0];
+  mp.forEach((t,i) => ctx.lineTo(((W*t)+mxshift)%W, hy - mh[i]*H*0.14));
+  ctx.lineTo(W, hy);
+  ctx.closePath();
+  ctx.fill();
 
-  // Ground
-  const grd=ctx.createLinearGradient(0,hy,0,H);
-  grd.addColorStop(0,'#281604'); grd.addColorStop(0.1,'#341e0a'); grd.addColorStop(0.5,'#44280e'); grd.addColorStop(1,'#523418');
-  ctx.fillStyle=grd; ctx.fillRect(0,hy,W,H-hy);
+  const grd = ctx.createLinearGradient(0, hy, 0, H);
+  grd.addColorStop(0, '#281604'); grd.addColorStop(0.1, '#341e0a'); grd.addColorStop(0.5, '#44280e'); grd.addColorStop(1, '#523418');
+  ctx.fillStyle = grd;
+  ctx.fillRect(0, hy, W, H - hy);
 
-  // Perspective grid — road/terrain lines converging to vanishing point
-  ctx.strokeStyle='rgba(57,255,20,0.055)'; ctx.lineWidth=0.7;
-  // lateral (depth) rows — exponentially spaced
-  for(let r=1;r<=14;r++){
-    const ft = Math.pow(r/14, 1.5);
-    const py = hy + ft*(H-hy);
-    const depthFrac = (py-hy)/(by-hy);
-    const spread = 0.45 + (1-depthFrac)*1.5;
-    const lx = vx - W*spread*0.5, rx = vx + W*spread*0.5;
-    ctx.beginPath(); ctx.moveTo(lx,py); ctx.lineTo(rx,py); ctx.stroke();
-  }
-  // longitudinal lines converging to horizon VP
-  for(let c=0;c<=16;c++){
-    const bx = W*0.02 + (c/16)*W*0.96;
-    ctx.beginPath(); ctx.moveTo(vx,hy); ctx.lineTo(bx,H); ctx.stroke();
-  }
+  ctx.strokeStyle = 'rgba(57,255,20,0.055)';
+  ctx.lineWidth = 0.7;
 
-  // Sand dune texture
-  ctx.strokeStyle='rgba(180,140,70,0.045)'; ctx.lineWidth=1;
-  for(let i=0;i<7;i++){
-    const py=hy+(i+1)*((H-hy)/8);
-    ctx.beginPath(); ctx.moveTo(0,py);
-    for(let px=0;px<=W;px+=50) ctx.lineTo(px, py+Math.sin(px*0.014+i*1.3)*5);
+  for(let r=1; r<=14; r++) {
+    let pos = ((r * 100 + camZ * 1000) % (H - hy));
+    let py = hy + pos;
+    const depthFrac = (py - hy) / (by - hy);
+    const spread = 0.45 + (1 - depthFrac) * 1.5;
+    const lx = vx - W * spread * 0.5;
+    const rx = vx + W * spread * 0.5;
+    ctx.beginPath();
+    ctx.moveTo(lx, py);
+    ctx.lineTo(rx, py);
     ctx.stroke();
   }
 
-  // Distant dust haze
-  const haze=ctx.createLinearGradient(0,hy-10,0,hy+60);
-  haze.addColorStop(0,'rgba(180,140,80,0)'); haze.addColorStop(0.5,'rgba(140,110,60,0.07)'); haze.addColorStop(1,'rgba(0,0,0,0)');
-  ctx.fillStyle=haze; ctx.fillRect(0,hy-10,W,70);
+  for(let c = 0; c <= 16; c++){
+    const bx = (W*0.02 + (c/16)*W*0.96 + mxshift) % W;
+    ctx.beginPath();
+    ctx.moveTo(vx, hy);
+    ctx.lineTo(bx, H);
+    ctx.stroke();
+  }
+
+  ctx.strokeStyle='rgba(180,140,70,0.045)';
+  ctx.lineWidth=1;
+  for(let i=0; i<7; i++){
+    const py = hy + ((i * 150 + camZ * 400) % (H - hy));
+    ctx.beginPath();
+    ctx.moveTo(0, py);
+    for(let px=0; px<=W; px += 50)
+      ctx.lineTo(px, py + Math.sin(px*0.014 + i*1.3)*5);
+    ctx.stroke();
+  }
+
+  const haze = ctx.createLinearGradient(0, hy-10, 0, hy+60);
+  haze.addColorStop(0,'rgba(180,140,80,0)');
+  haze.addColorStop(0.5,'rgba(140,110,60,0.07)');
+  haze.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle = haze;
+  ctx.fillRect(0, hy-10, W, 70);
 }
 
-// ── Crosshair ──────────────────────────────────────────────────
 function drawCrosshair() {
   const cx=mouse.x, cy=mouse.y;
   ctx.save();
   ctx.strokeStyle='rgba(255,50,50,0.85)'; ctx.lineWidth=1.2;
   ctx.beginPath(); ctx.arc(cx,cy,16,0,Math.PI*2); ctx.stroke();
   const gap=5, len=10;
-  [[cx-gap-len,cy,cx-gap,cy],[cx+gap,cy,cx+gap+len,cy],[cx,cy-gap-len,cx,cy-gap],[cx,cy+gap,cx,cy+gap+len]].forEach(([ax,ay,bx,by])=>{ ctx.beginPath(); ctx.moveTo(ax,ay); ctx.lineTo(bx,by); ctx.stroke(); });
+  [[cx-gap-len,cy,cx-gap,cy],[cx+gap,cy,cx+gap+len,cy],[cx,cy-gap-len,cx,cy-gap],[cx,cy+gap,cx,cy+gap+len]].forEach(([ax,ay,bx,by])=>{
+    ctx.beginPath(); ctx.moveTo(ax,ay); ctx.lineTo(bx,by); ctx.stroke();
+  });
   ctx.fillStyle='rgba(255,50,50,0.9)'; ctx.beginPath(); ctx.arc(cx,cy,2,0,Math.PI*2); ctx.fill();
   ctx.restore();
 }
 
-// ── Spawn ──────────────────────────────────────────────────────
 for(let i=0;i<7;i++){
   const t=new Tank();
-  t.wz=0.06+(i/6)*0.9; t.wx=(Math.random()-0.5)*2.0;
-  t.dir=Math.random()<0.5?1:-1; t.speed=(0.0025+Math.random()*0.004)*t.dir;
+  t.wz = 0.06 + (i / 6) * 0.9 + camera.wz;
+  t.wx = camera.wx + (Math.random() - 0.5) * 2.0;
+  t.dir = Math.random() < 0.5 ? 1 : -1;
+  t.speed = (0.0025 + Math.random() * 0.004) * t.dir;
   tanks.push(t);
 }
-setInterval(()=>{ if(tanks.length<10) tanks.push(new Tank()); },3000);
+setInterval(() => { if(tanks.length < 10) tanks.push(new Tank()); }, 3000);
 
-// ── Launch ─────────────────────────────────────────────────────
 function launchMissile() {
   if(cooldown) return;
-  const btn=document.getElementById('launch-btn');
-  const br=btn.getBoundingClientRect();
+  if(missiles.length) return;
+  const btn = document.getElementById('launch-btn');
   missiles.push(new Missile());
-  cooldown=true;
+
+  cooldown = true;
   btn.classList.remove('firing'); void btn.offsetWidth; btn.classList.add('firing');
-  for(let r=0;r<3;r++) setTimeout(()=>{
-    const ring=document.createElement('div'); ring.className='launch-ring';
-    ring.style.cssText=`left:${br.left+br.width/2}px;top:${br.top+br.height/2}px;width:${br.width}px;height:${br.height}px;`;
-    document.body.appendChild(ring); setTimeout(()=>ring.remove(),550);
-  },r*80);
+  for(let r=0; r<3; r++) setTimeout(() => {
+    const ring = document.createElement('div');
+    const br = btn.getBoundingClientRect();
+    ring.className = 'launch-ring';
+    ring.style.cssText = `left:${br.left+br.width/2}px;top:${br.top+br.height/2}px;width:${br.width}px;height:${br.height}px;`;
+    document.body.appendChild(ring); setTimeout(() => ring.remove(), 550);
+  }, r*80);
+
   btn.classList.add('cooldown');
-  setTimeout(()=>{ cooldown=false; btn.classList.remove('cooldown','firing'); },1600);
+  setTimeout(() => { cooldown = false; btn.classList.remove('cooldown','firing'); }, 1600);
 }
 
-// ── Collision ──────────────────────────────────────────────────
-function checkCollisions() {
-  missiles.forEach(m=>{
+function checkCollisions(){
+  missiles.forEach(m => {
     if(!m.active) return;
-    const {sx:msx,sy:msy}=m.screenPos();
-    tanks.forEach(t=>{
+    const {sx: msx, sy: msy} = m.screenPos();
+    tanks.forEach(t => {
       if(!t.alive) return;
-      const {sx:tsx,sy:tsy}=t.screen();
-      const sc=t.sc();
-      const dx=msx-tsx, dy=msy-tsy;
-      if(Math.sqrt(dx*dx+dy*dy)<60*sc){
-        t.alive=false; m.active=false;
-        explosions.push(new Explosion(tsx,tsy,sc));
-        score+=100; document.getElementById('score').textContent=score;
-        setTimeout(()=>{ t.reset(); t.alive=true; },3200);
+      const {sx: tsx, sy: tsy} = t.screen();
+      const sc = t.sc();
+      const dx = msx - tsx, dy = msy - tsy;
+      if(Math.sqrt(dx*dx+dy*dy) < 60*sc){
+        t.alive = false; m.active = false;
+        explosions.push(new Explosion(tsx, tsy, sc));
+        score += 100; document.getElementById('score').textContent = score;
+        setTimeout(() => { t.reset(); t.alive = true; }, 3200);
       }
     });
   });
 }
 
-// ── Main loop ──────────────────────────────────────────────────
 function loop() {
   ctx.clearRect(0,0,W,H);
   drawBackground();
 
-  // Painter's algorithm: sort far-to-near
-  tanks.sort((a,b)=>b.wz-a.wz);
-  tanks.forEach(t=>{ if(t.alive){ t.update(); t.draw(); } });
+  tanks.sort((a,b) => b.wz - a.wz);
+  tanks.forEach(t => { if(t.alive) { t.update(); t.draw(); } });
 
-  missiles=missiles.filter(m=>m.active);
-  missiles.forEach(m=>{ m.update(); m.draw(); });
+  missiles = missiles.filter(m => m.active);
+  missiles.forEach(m => { m.update(); m.draw(); });
 
-  particles=particles.filter(p=>p.life>0);
-  particles.forEach(p=>{
-    p.x+=p.vx; p.y+=p.vy; p.vy+=0.12; p.life-=p.decay;
-    ctx.beginPath(); ctx.arc(p.x,p.y,p.size*p.life,0,Math.PI*2);
-    ctx.fillStyle=p.color; ctx.globalAlpha=p.life; ctx.fill(); ctx.globalAlpha=1;
+  particles = particles.filter(p => p.life > 0);
+  particles.forEach(p => {
+    p.x += p.vx; p.y += p.vy; p.vy += 0.12; p.life -= p.decay;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.size*p.life, 0, Math.PI*2);
+    ctx.fillStyle = p.color; ctx.globalAlpha = p.life; ctx.fill(); ctx.globalAlpha = 1;
   });
 
-  explosions=explosions.filter(e=>e.alive);
-  explosions.forEach(e=>{ e.update(); e.draw(); });
+  explosions = explosions.filter(e => e.alive);
+  explosions.forEach(e => { e.update(); e.draw(); });
 
   checkCollisions();
-  document.getElementById('tank-count').textContent=tanks.filter(t=>t.alive).length;
+
+  document.getElementById('tank-count').textContent = tanks.filter(t => t.alive).length;
   drawCrosshair();
+
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
