@@ -258,6 +258,7 @@
         <button class="btn" id="btn-dec" onclick="change(-1)" disabled>−</button>
         <button class="btn" id="btn-inc" onclick="change(1)"  disabled>+</button>
         <button class="btn btn-reset"    onclick="tryReset()"  disabled id="btn-rst">RESET</button>
+        <button class="btn btn-reset"    onclick="tryLock()"  disabled id="btn-rst">Lock</button>
       </div>
 
       <!-- PIN lock -->
@@ -416,6 +417,14 @@ async function tryReset(){
   if(!unlocked) return;
   count = 0;
   statusEl.textContent = 'STANDBY';
+  renderCounter();
+  await saveCounter();
+}
+
+  async function tryLock(){
+  if(unlocked)  {unlocked = false;}
+  count = 0;
+  statusEl.textContent = 'Locking';
   renderCounter();
   await saveCounter();
 }
