@@ -5,42 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MERKAVA STRIKE</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-<style>
-  :root { --green:#39ff14; --green-dim:#1a7a00; --bg:#060d04; }
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { background:var(--bg); font-family:'Share Tech Mono',monospace; overflow:hidden; width:100vw; height:100vh; user-select:none; cursor:crosshair; }
-  #canvas { display:block; width:100vw; height:100vh; }
-  #hud { position:fixed; top:0; left:0; right:0; display:flex; justify-content:space-between; align-items:flex-start; padding:16px 24px; pointer-events:none; z-index:10; }
-  .hud-block { font-family:'Orbitron',monospace; color:var(--green); text-shadow:0 0 8px rgba(57,255,20,0.5); }
-  .hud-label { font-size:0.5rem; letter-spacing:0.3em; color:var(--green-dim); }
-  .hud-value { font-size:1.5rem; font-weight:700; }
-  #title { position:fixed; top:16px; left:50%; transform:translateX(-50%); font-family:'Orbitron',monospace; font-size:1rem; font-weight:900; letter-spacing:0.5em; color:var(--green); text-shadow:0 0 12px rgba(57,255,20,0.5); pointer-events:none; z-index:10; }
-  #launch-btn {
-    position:fixed; bottom:36px; left:50%; transform:translateX(-50%);
-    width:90px; height:90px; border-radius:50%;
-    background:radial-gradient(circle at 35% 35%,#ff5555,#cc0000,#7a0000);
-    border:3px solid #ff4444;
-    box-shadow:0 0 0 4px rgba(255,30,30,0.15),0 0 20px rgba(255,0,0,0.4),0 4px 20px rgba(0,0,0,0.6),inset 0 -4px 8px rgba(0,0,0,0.4);
-    font-family:'Orbitron',monospace; font-size:0.55rem; font-weight:700; letter-spacing:0.12em; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,0.8);
-    cursor:pointer; z-index:20; transition:transform 0.1s,box-shadow 0.1s;
-    display:flex; align-items:center; justify-content:center; text-align:center; line-height:1.4;
-  }
-  #launch-btn:hover { box-shadow:0 0 0 4px rgba(255,30,30,0.25),0 0 35px rgba(255,0,0,0.6),0 4px 20px rgba(0,0,0,0.6),inset 0 -4px 8px rgba(0,0,0,0.4); transform:translateX(-50%) scale(1.05); }
-  #launch-btn.cooldown { opacity:0.5; pointer-events:none; }
-  #launch-btn.firing { animation:btnFire 0.35s ease-out forwards; }
-  @keyframes btnFire {
-    0%   { transform:translateX(-50%) scale(1); }
-    20%  { transform:translateX(-50%) scale(0.92); box-shadow:0 0 0 8px rgba(255,120,0,0.4),0 0 60px rgba(255,100,0,0.9),inset 0 2px 6px rgba(0,0,0,0.5); background:radial-gradient(circle at 35% 35%,#ffaa00,#ff4400,#cc0000); }
-    60%  { transform:translateX(-50%) scale(1.08); }
-    100% { transform:translateX(-50%) scale(1); }
-  }
-  .launch-ring { position:fixed; border-radius:50%; border:3px solid rgba(255,160,30,0.9); pointer-events:none; z-index:19; animation:ringExpand 0.5s ease-out forwards; }
-  @keyframes ringExpand { 0%{transform:translate(-50%,-50%) scale(0.5);opacity:1} 100%{transform:translate(-50%,-50%) scale(3.5);opacity:0} }
-  #hint { position:fixed; bottom:140px; left:50%; transform:translateX(-50%); font-size:0.55rem; letter-spacing:0.2em; color:var(--green-dim); pointer-events:none; z-index:10; text-align:center; }
-  body::after { content:''; position:fixed; inset:0; background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.04) 3px,rgba(0,0,0,0.04) 4px); pointer-events:none; z-index:50; }
-</style>
+<link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="game-page">
 <canvas id="canvas"></canvas>
 <div id="title">MERKAVA STRIKE</div>
 <div id="hud">
