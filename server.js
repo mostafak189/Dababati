@@ -7,7 +7,6 @@ const app  = express();
 const port = process.env.PORT || 3000;
 const TOKEN_SECRET = process.env.TOKEN_SECRET || 'change-me-in-production';
 
-// DB setup
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
@@ -22,7 +21,6 @@ app.get('/', (req, res) => {
 });
 
 async function initDB() {
-  // ... your existing table creations (same as your current code) ...
   const client = await pool.connect();
   try {
     await client.query(`
@@ -61,7 +59,7 @@ setInterval(async () => {
   } catch (e) {
     console.error('Failed to prune old comments:', e);
   }
-}, 3600000); // hourly
+}, 3600000);
 
 function makeToken(ttlMs=300000) {
   const payload = `expires:${Date.now()+ttlMs}`;
@@ -181,7 +179,7 @@ app.post('/comments/:id/like', async (req, res) => {
   }
 });
 
-// DELETE with token authorization header
+// DELETE /comments/:id authorized by token header
 app.delete('/comments/:id', async (req, res) => {
   const header = req.headers.authorization || '';
   const token = header.startsWith('Bearer ') ? header.slice(7) : '';
