@@ -1,9 +1,12 @@
-const express = require('express');
-const cors    = require('cors');
+const express  = require('express');
+const cors     = require('cors');
 const { Pool } = require('pg');
+const crypto   = require('crypto');   // built-in — no extra install needed
 
 const app  = express();
-const port = process.env.PORT || 3000;
+const port         = process.env.PORT || 3000;
+// Secret used to sign unlock tokens — set TOKEN_SECRET in your env vars (Render → Environment)
+const TOKEN_SECRET = process.env.TOKEN_SECRET || 'change-me-in-production';
 
 // ── Database ────────────────────────────────────────────────────────────────
 const pool = new Pool({
@@ -50,6 +53,19 @@ async function initDB() {
 
       CREATE INDEX IF NOT EXISTS idx_comments_parent  ON comments(parent_id);
       CREATE INDEX IF NOT EXISTS idx_comments_created ON comments(created_at);
+
+      -- Admin PIN table: one row, PIN stored as a bcrypt hash via pgcrypto.
+      -- To set your PIN manually in Neon, run:
+      --   INSERT INTO admin_pin (id, pin_hash)
+      --   VALUES (1, crypt('YOUR_PIN_HERE', gen_salt('bf', 10)))
+      --   ON CONFLICT (id) DO UPDATE SET pin_hash = EXCLUDED.pin_hash;
+      -- (Make sure the pgcrypto extension is enabled: CREATE EXTENSION IF NOT EXISTS pgcrypto;)
+      CREATE EXTENSION IF NOT EXISTS pgcrypto;
+      CREATE TABLE IF NOT EXISTS admin_pin (
+        id       INTEGER PRIMARY KEY DEFAULT 1,
+        pin_hash TEXT    NOT NULL,
+        CHECK (id = 1)
+      );
     `);
     console.log('✅  Database tables ready');
   } finally {
@@ -71,6 +87,65 @@ async function pruneOldComments() {
 }
 // Run prune every hour
 setInterval(pruneOldComments, 60 * 60 * 1000);
+
+
+// ════════════════════════════════════════════════════════════════════════════
+//  TOKEN HELPERS  (HMAC-SHA256, no extra packages)
+// ════════════════════════════════════════════════════════════════════════════
+
+// Token payload: "expires:<unix-ms>"  — signed with HMAC-SHA256
+function makeToken(ttlMs = 5 * 60 * 1000) {
+  const payload = `expires:${Date.now() + ttlMs}`;
+  const sig     = crypto.createHmac('sha256', TOKEN_SECRET).update(payload).digest('hex');
+  return Buffer.from(`${payload}.${sig}`).toString('base64url');
+}
+
+function verifyToken(token) {
+  try {
+    const raw              = Buffer.from(token, 'base64url').toString();
+    const lastDot          = raw.lastIndexOf('.');
+    const payload          = raw.slice(0, lastDot);
+    const sig              = raw.slice(lastDot + 1);
+    const expected         = crypto.createHmac('sha256', TOKEN_SECRET).update(payload).digest('hex');
+    if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return false;
+    const expiry           = parseInt(payload.split(':')[1], 10);
+    return Date.now() < expiry;
+  } catch { return false; }
+}
+
+
+// ════════════════════════════════════════════════════════════════════════════
+//  AUTH ROUTES
+// ════════════════════════════════════════════════════════════════════════════
+
+// POST /auth/pin   body: { pin: "1234" }  →  { token } | 401
+app.post('/auth/pin', async (req, res) => {
+  const { pin } = req.body;
+  if (!pin || !/^\d{4,8}$/.test(pin))
+    return res.status(400).json({ error: 'PIN must be 4–8 digits' });
+
+  try {
+    const { rows } = await pool.query(
+      `SELECT (pin_hash = crypt($1, pin_hash)) AS ok FROM admin_pin WHERE id = 1`,
+      [pin]
+    );
+    if (!rows.length || !rows[0].ok)
+      return res.status(401).json({ error: 'Invalid PIN' });
+
+    res.json({ token: makeToken() });
+  } catch (err) {
+    console.error('PIN check error:', err.message);
+    res.status(500).json({ error: 'DB error' });
+  }
+});
+
+// GET /auth/verify   header: Authorization: Bearer <token>  →  200 | 401
+app.get('/auth/verify', (req, res) => {
+  const header = req.headers.authorization || '';
+  const token  = header.startsWith('Bearer ') ? header.slice(7) : '';
+  if (verifyToken(token)) return res.json({ ok: true });
+  res.status(401).json({ error: 'Invalid or expired token' });
+});
 
 
 // ════════════════════════════════════════════════════════════════════════════
