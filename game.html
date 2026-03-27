@@ -1,58 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 <title>SPIKE ATGM</title>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-<style>
-* { margin:0; padding:0; box-sizing:border-box; }
-body { background:#000; overflow:hidden; width:100vw; height:100vh; font-family:'Share Tech Mono',monospace; user-select:none; }
-canvas { display:block; position:fixed; inset:0; width:100%; height:100%; touch-action:none; }
-#overlays { position:fixed; inset:0; pointer-events:none; z-index:20; }
-#scanlines { position:fixed; inset:0; background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.05) 2px,rgba(0,0,0,0.05) 4px); pointer-events:none; z-index:40; }
-#vignette { position:fixed; inset:0; background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,0.8) 100%); pointer-events:none; z-index:35; }
-#nv-tint { position:fixed; inset:0; background:rgba(18,55,8,0.22); pointer-events:none; z-index:33; opacity:0; transition:opacity 0.6s; }
-#nv-tint.on { opacity:1; }
-/* Seeker HUD */
-#shud { position:fixed; inset:0; pointer-events:none; z-index:25; opacity:0; transition:opacity 0.5s; }
-#shud.on { opacity:1; }
-.brk { position:absolute; width:55px; height:55px; }
-.brk.tl { top:18px; left:18px; border-top:2px solid #39ff14; border-left:2px solid #39ff14; }
-.brk.tr { top:18px; right:18px; border-top:2px solid #39ff14; border-right:2px solid #39ff14; }
-.brk.bl { bottom:18px; left:18px; border-bottom:2px solid #39ff14; border-left:2px solid #39ff14; }
-.brk.br { bottom:18px; right:18px; border-bottom:2px solid #39ff14; border-right:2px solid #39ff14; }
-.hrow { position:absolute; font-family:'Orbitron',monospace; color:#39ff14; text-shadow:0 0 6px rgba(57,255,20,0.6); font-size:0.55rem; letter-spacing:0.12em; line-height:1.8; }
-#htl { top:80px; left:18px; }
-#htr { top:80px; right:18px; text-align:right; }
-#hbl { bottom:80px; left:18px; }
-#hbr { bottom:80px; right:18px; text-align:right; }
-.hv { font-size:0.9rem; font-weight:700; }
-/* Launch button */
-#lbtn {
-  position:fixed; bottom:38px; left:50%; transform:translateX(-50%);
-  width:96px; height:96px; border-radius:50%;
-  background:radial-gradient(circle at 35% 35%,#ff6666,#cc0000,#6a0000);
-  border:3px solid #ff4444;
-  box-shadow:0 0 0 5px rgba(255,30,30,0.15),0 0 25px rgba(255,0,0,0.5),0 6px 24px rgba(0,0,0,0.7),inset 0 -5px 10px rgba(0,0,0,0.5);
-  font-family:'Orbitron',monospace; font-size:0.62rem; font-weight:900; letter-spacing:0.1em;
-  color:#fff; cursor:pointer; z-index:50; pointer-events:all;
-  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
-  transition:box-shadow 0.15s,transform 0.1s,opacity 0.5s;
-}
-#lbtn:hover { box-shadow:0 0 0 5px rgba(255,30,30,0.3),0 0 45px rgba(255,0,0,0.7),0 6px 24px rgba(0,0,0,0.7),inset 0 -5px 10px rgba(0,0,0,0.5); transform:translateX(-50%) scale(1.06); }
-#lbtn.fire { animation:bfire 0.4s ease-out; }
-#lbtn.gone { opacity:0; pointer-events:none; }
-@keyframes bfire { 0%{transform:translateX(-50%) scale(1)} 20%{transform:translateX(-50%) scale(0.88)} 60%{transform:translateX(-50%) scale(1.1)} 100%{transform:translateX(-50%) scale(1)} }
-.lring { position:fixed; border-radius:50%; border:3px solid rgba(255,160,30,0.85); pointer-events:none; z-index:49; animation:rout 0.55s ease-out forwards; }
-@keyframes rout { 0%{transform:translate(-50%,-50%) scale(0.4);opacity:1} 100%{transform:translate(-50%,-50%) scale(4.2);opacity:0} }
-#pmsg { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); font-family:'Orbitron',monospace; font-size:1.3rem; font-weight:900; letter-spacing:0.4em; color:#39ff14; text-shadow:0 0 20px #39ff14; pointer-events:none; z-index:60; opacity:0; white-space:nowrap; }
-#pmsg.fl { animation:mfl 2.2s ease-out forwards; }
-@keyframes mfl { 0%{opacity:0} 15%{opacity:1} 70%{opacity:1} 100%{opacity:0} }
-#title { position:fixed; top:16px; left:50%; transform:translateX(-50%); font-family:'Orbitron',monospace; font-size:0.95rem; font-weight:900; letter-spacing:0.4em; color:#39ff14; text-shadow:0 0 10px rgba(57,255,20,0.6); pointer-events:none; z-index:30; }
-</style>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
 </head>
-<body>
+<body class="game-page">
 <canvas id="c"></canvas>
 <div id="nv-tint"></div>
 <div id="vignette"></div>
