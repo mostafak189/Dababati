@@ -1,248 +1,108 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dababati</title>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --green: #39ff14;
-      --green-dim: #1a7a00;
-      --green-glow: rgba(57, 255, 20, 0.4);
-      --amber: #ffb300;
-      --red: #ff2a2a;
-      --bg: #050a03;
-      --panel: #0b1409;
-      --panel2: #0d1a0a;
-      --border: #1e3d0f;
-      --border2: #274d16;
-      --text: #c8f5b0;
-      --text-dim: #6aaa50;
-      --text-muted: #2e6020;
-    }
-    * { margin:0; padding:0; box-sizing:border-box; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dababati</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #39ff14;
+    --green-dim: #1a7a00;
+    --green-glow: rgba(57, 255, 20, 0.4);
+    --amber: #ffb300;
+    --red: #ff2a2a;
+    --bg: #050a03;
+    --panel: #0b1409;
+    --panel2: #0d1a0a;
+    --border: #1e3d0f;
+    --border2: #274d16;
+    --text: #c8f5b0;
+    --text-dim: #6aaa50;
+    --text-muted: #2e6020;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'Share Tech Mono',monospace;
+    min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:40px 16px 80px;
+    overflow-x:hidden; position:relative; }
+  body::before { content:''; position:fixed; inset:0; background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.08) 2px,rgba(0,0,0,0.08) 4px); pointer-events:none; z-index:100; }
+  body::after { content:''; position:fixed; inset:0; background-image:linear-gradient(rgba(57,255,20,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(57,255,20,0.03) 1px,transparent 1px); background-size:40px 40px; pointer-events:none; z-index:0; }
 
-    body {
-      background:var(--bg); color:var(--text);
-      font-family:'Share Tech Mono',monospace;
-      min-height:100vh; display:flex; flex-direction:column;
-      align-items:center; padding:40px 16px 80px;
-      overflow-x:hidden; position:relative;
-    }
-    body::before {
-      content:''; position:fixed; inset:0;
-      background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.08) 2px,rgba(0,0,0,0.08) 4px);
-      pointer-events:none; z-index:100;
-    }
-    body::after {
-      content:''; position:fixed; inset:0;
-      background-image:linear-gradient(rgba(57,255,20,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(57,255,20,0.03) 1px,transparent 1px);
-      background-size:40px 40px; pointer-events:none; z-index:0;
-    }
+  .container { position:relative; z-index:10; display:flex; flex-direction:column; align-items:center; gap:40px; width:100%; max-width:860px; }
 
-    .container {
-      position:relative; z-index:10;
-      display:flex; flex-direction:column; align-items:center; gap:40px;
-      width:100%; max-width:860px;
-    }
+  h1 { font-family:'Orbitron',monospace; font-weight:900; font-size:clamp(2rem,6vw,4rem); letter-spacing:0.3em; text-transform:uppercase; color:var(--green); text-shadow:0 0 10px var(--green),0 0 30px var(--green-glow),0 0 60px rgba(57,255,20,0.2); animation:flicker 8s infinite; }
+  @keyframes flicker { 0%,95%,100%{opacity:1}96%{opacity:0.85}97%{opacity:1}98%{opacity:0.7}99%{opacity:1} }
 
-    h1 {
-      font-family:'Orbitron',monospace; font-weight:900;
-      font-size:clamp(2rem,6vw,4rem); letter-spacing:0.3em;
-      text-transform:uppercase; color:var(--green);
-      text-shadow:0 0 10px var(--green),0 0 30px var(--green-glow),0 0 60px rgba(57,255,20,0.2);
-      animation:flicker 8s infinite;
-    }
-    @keyframes flicker { 0%,95%,100%{opacity:1}96%{opacity:0.85}97%{opacity:1}98%{opacity:0.7}99%{opacity:1} }
+  /* ── Meter Panel ── */
+  .meter-panel { background:var(--panel); border:2px solid var(--border); border-radius:4px; padding:32px 48px; position:relative; box-shadow:0 0 0 1px rgba(57,255,20,0.1),0 0 30px rgba(57,255,20,0.05),inset 0 0 40px rgba(0,0,0,0.5); min-width:min(420px,100%); width:100%; max-width:460px; }
+  .meter-label { font-family:'Orbitron',monospace; font-size:0.6rem; letter-spacing:0.3em; color:var(--green-dim); text-align:center; margin-bottom:16px; }
+  .counter-display { font-family:'Orbitron',monospace; font-size:clamp(3rem,10vw,6rem); font-weight:700; color:var(--green); text-align:center; letter-spacing:0.1em; text-shadow:0 0 10px var(--green),0 0 25px var(--green-glow); cursor:default; user-select:none; min-width:6ch; display:block; transition:color 0.3s; }
+  .counter-display.warning{color:var(--amber);text-shadow:0 0 10px var(--amber),0 0 25px rgba(255,179,0,0.4);}
+  .counter-display.danger{color:var(--red);text-shadow:0 0 10px var(--red),0 0 25px rgba(255,42,42,0.4);}
+  .bar-container{margin-top:20px;width:100%;height:16px;background:rgba(57,255,20,0.08);border:1px solid var(--border);border-radius:2px;overflow:hidden;}
+  .bar-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--green-dim),var(--green));transition:width 0.3s ease,background 0.3s;border-radius:2px;position:relative;}
+  .bar-fill::after{content:'';position:absolute;right:0;top:0;bottom:0;width:4px;background:white;opacity:0.6;filter:blur(2px);}
+  .bar-fill.warning{background:linear-gradient(90deg,#7a4400,var(--amber));}
+  .bar-fill.danger{background:linear-gradient(90deg,#7a0000,var(--red));}
+  .ticks{display:flex;justify-content:space-between;margin-top:4px;padding:0 2px;}
+  .tick{font-size:0.55rem;color:var(--green-dim);}
+  
+  /* ── Controls area ── */
+  .controls-area { margin-top:24px; display:flex; flex-direction:column; align-items:center; gap:12px; }
+  .controls { display:flex; gap:16px; justify-content:center; }
+  .btn { font-family:'Orbitron',monospace; font-size:1.4rem; font-weight:700; width:56px; height:56px; background:transparent; border:2px solid var(--green-dim); color:var(--green); border-radius:4px; cursor:pointer; transition:all 0.15s; display:flex; align-items:center; justify-content:center; }
+  .btn:hover:not(:disabled){background:rgba(57,255,20,0.1);border-color:var(--green);box-shadow:0 0 12px var(--green-glow);transform:translateY(-1px);}
+  .btn:active:not(:disabled){transform:translateY(1px);box-shadow:none;}
+  .btn:disabled{opacity:0.25;cursor:not-allowed;border-color:#0d1e08;color:#1a4a0a;}
+  .btn-reset{font-size:0.55rem;letter-spacing:0.15em;width:auto;padding:0 18px;color:var(--green-dim);border-color:#152a09;}
+  .btn-reset:hover:not(:disabled){color:var(--green);border-color:var(--green-dim);box-shadow:none;}
+  .status-line{font-size:0.6rem;letter-spacing:0.2em;color:var(--green-dim);text-align:center;height:1em;}
 
-    /* ── Meter Panel ── */
-    .meter-panel {
-      background:var(--panel); border:2px solid var(--border); border-radius:4px;
-      padding:32px 48px; position:relative;
-      box-shadow:0 0 0 1px rgba(57,255,20,0.1),0 0 30px rgba(57,255,20,0.05),inset 0 0 40px rgba(0,0,0,0.5);
-      min-width:min(420px,100%); width:100%; max-width:460px;
-    }
-    .meter-panel::before,.meter-panel::after {
-      content:''; position:absolute; width:20px; height:20px;
-      border-color:var(--green); border-style:solid;
-    }
-    .meter-panel::before{top:-2px;left:-2px;border-width:3px 0 0 3px;}
-    .meter-panel::after{bottom:-2px;right:-2px;border-width:0 3px 3px 0;}
+  /* ── PIN lock zone ── */
+  .lock-zone { display:flex; flex-direction:column; align-items:center; gap:8px; width:100%; }
+  .lock-status { display:flex; align-items:center; gap:8px; font-size:0.55rem; letter-spacing:0.18em; color:var(--text-muted); }
+  .lock-icon { font-size:0.9rem; }
+  .lock-status.unlocked { color:var(--green-dim); }
 
-    .meter-label { font-family:'Orbitron',monospace; font-size:0.6rem; letter-spacing:0.3em; color:var(--green-dim); text-align:center; margin-bottom:16px; }
+  .pin-dots { display:flex; gap:8px; justify-content:center; }
+  .pin-dot { width:10px; height:10px; border-radius:50%; border:1px solid var(--green-dim); background:transparent; transition:background 0.15s, border-color 0.15s; }
+  .pin-dot.filled { background:var(--green); border-color:var(--green); box-shadow:0 0 6px var(--green-glow); }
+  .pin-dot.error  { background:var(--red); border-color:var(--red); }
 
-    .counter-display {
-      font-family:'Orbitron',monospace; font-size:clamp(3rem,10vw,6rem); font-weight:700;
-      color:var(--green); text-align:center; letter-spacing:0.1em;
-      text-shadow:0 0 10px var(--green),0 0 25px var(--green-glow);
-      cursor:default; user-select:none; min-width:6ch; display:block; transition:color 0.3s;
-    }
-    .counter-display.warning{color:var(--amber);text-shadow:0 0 10px var(--amber),0 0 25px rgba(255,179,0,0.4);}
-    .counter-display.danger{color:var(--red);text-shadow:0 0 10px var(--red),0 0 25px rgba(255,42,42,0.4);}
+  .pin-keypad { display:grid; grid-template-columns:repeat(3,44px); gap:6px; margin-top:4px; }
+  .pin-key { font-family:'Orbitron',monospace; font-size:0.75rem; font-weight:700; width:44px; height:36px; background:transparent; border:1px solid var(--border2); color:var(--text-dim); border-radius:3px; cursor:pointer; transition:all 0.12s; display:flex; align-items:center; justify-content:center; }
+  .pin-key:hover{background:rgba(57,255,20,0.07);border-color:var(--green-dim);color:var(--green);}
+  .pin-key:active{transform:scale(0.93);}
+  .pin-key.wide{grid-column:span 2;}
+  .pin-key.del{color:var(--red);border-color:#3a0f0f;}
+  .pin-key.del:hover{background:rgba(255,42,42,0.08);border-color:var(--red);}
+  .unlock-timer{font-size:0.48rem;letter-spacing:0.15em;color:var(--text-muted);}
 
-    .bar-container{margin-top:20px;width:100%;height:16px;background:rgba(57,255,20,0.08);border:1px solid var(--border);border-radius:2px;overflow:hidden;}
-    .bar-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--green-dim),var(--green));transition:width 0.3s ease,background 0.3s;border-radius:2px;position:relative;}
-    .bar-fill::after{content:'';position:absolute;right:0;top:0;bottom:0;width:4px;background:white;opacity:0.6;filter:blur(2px);}
-    .bar-fill.warning{background:linear-gradient(90deg,#7a4400,var(--amber));}
-    .bar-fill.danger{background:linear-gradient(90deg,#7a0000,var(--red));}
+  /* ── COMMENTS ── */
+  .comments-section{width:100%;background:var(--panel);border:2px solid var(--border);border-radius:4px;overflow:hidden;position:relative;box-shadow:0 0 0 1px rgba(57,255,20,0.08),0 0 30px rgba(57,255,20,0.04);}
+  .comments-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);background:rgba(57,255,20,0.03);}
+  .comments-title{font-family:'Orbitron',monospace;font-size:0.65rem;letter-spacing:0.3em;color:var(--green);}
+  .comments-meta{font-size:0.55rem;letter-spacing:0.15em;color:var(--text-muted);}
+  .expiry-badge{font-size:0.5rem;letter-spacing:0.1em;color:var(--amber);background:rgba(255,179,0,0.08);border:1px solid rgba(255,179,0,0.2);border-radius:2px;padding:2px 8px;}
 
-    .ticks{display:flex;justify-content:space-between;margin-top:4px;padding:0 2px;}
-    .tick{font-size:0.55rem;color:var(--green-dim);}
+  .comments-feed{max-height:480px;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px;scrollbar-width:thin;scrollbar-color:var(--green-dim) transparent;}
+  .comments-feed::-webkit-scrollbar{width:4px}
+  .comments-feed::-webkit-scrollbar-track{background:transparent}
+  .comments-feed::-webkit-scrollbar-thumb{background:var(--green-dim);border-radius:2px}
 
-    /* ── Controls area ── */
-    .controls-area { margin-top:24px; display:flex; flex-direction:column; align-items:center; gap:12px; }
+  .comment-empty{text-align:center;padding:40px 0;color:var(--text-muted);font-size:0.65rem;letter-spacing:0.2em;}
+  .comment-card{background:var(--panel2);border:1px solid var(--border);border-radius:3px;padding:14px 16px 10px;transition:border-color 0.2s;cursor:pointer;}
+  .comment-card.selected{border-color:var(--red);}
 
-    .controls { display:flex; gap:16px; justify-content:center; }
-
-    .btn {
-      font-family:'Orbitron',monospace; font-size:1.4rem; font-weight:700;
-      width:56px; height:56px; background:transparent;
-      border:2px solid var(--green-dim); color:var(--green); border-radius:4px;
-      cursor:pointer; transition:all 0.15s; display:flex; align-items:center; justify-content:center;
-    }
-    .btn:hover:not(:disabled){background:rgba(57,255,20,0.1);border-color:var(--green);box-shadow:0 0 12px var(--green-glow);transform:translateY(-1px);}
-    .btn:active:not(:disabled){transform:translateY(1px);box-shadow:none;}
-    .btn:disabled{opacity:0.25;cursor:not-allowed;border-color:#0d1e08;color:#1a4a0a;}
-
-    .btn-reset{font-size:0.55rem;letter-spacing:0.15em;width:auto;padding:0 18px;color:var(--green-dim);border-color:#152a09;}
-    .btn-reset:hover:not(:disabled){color:var(--green);border-color:var(--green-dim);box-shadow:none;}
-
-    .status-line{font-size:0.6rem;letter-spacing:0.2em;color:var(--green-dim);text-align:center;height:1em;}
-
-    /* ── PIN lock zone ── */
-    .lock-zone {
-      display:flex; flex-direction:column; align-items:center; gap:8px;
-      width:100%;
-    }
-
-    .lock-status {
-      display:flex; align-items:center; gap:8px;
-      font-size:0.55rem; letter-spacing:0.18em; color:var(--text-muted);
-    }
-    .lock-icon { font-size:0.9rem; }
-    .lock-status.unlocked { color:var(--green-dim); }
-
-    /* PIN dots */
-    .pin-dots {
-      display:flex; gap:8px; justify-content:center;
-    }
-    .pin-dot {
-      width:10px; height:10px; border-radius:50%;
-      border:1px solid var(--green-dim); background:transparent;
-      transition:background 0.15s, border-color 0.15s;
-    }
-    .pin-dot.filled { background:var(--green); border-color:var(--green); box-shadow:0 0 6px var(--green-glow); }
-    .pin-dot.error  { background:var(--red); border-color:var(--red); }
-
-    /* PIN keypad */
-    .pin-keypad {
-      display:grid; grid-template-columns:repeat(3,44px); gap:6px;
-      margin-top:4px;
-    }
-    .pin-key {
-      font-family:'Orbitron',monospace; font-size:0.75rem; font-weight:700;
-      width:44px; height:36px; background:transparent;
-      border:1px solid var(--border2); color:var(--text-dim); border-radius:3px;
-      cursor:pointer; transition:all 0.12s; display:flex; align-items:center; justify-content:center;
-    }
-    .pin-key:hover{background:rgba(57,255,20,0.07);border-color:var(--green-dim);color:var(--green);}
-    .pin-key:active{transform:scale(0.93);}
-    .pin-key.wide{grid-column:span 2;}
-    .pin-key.del{color:var(--red);border-color:#3a0f0f;}
-    .pin-key.del:hover{background:rgba(255,42,42,0.08);border-color:var(--red);}
-
-    /* unlock timer */
-    .unlock-timer{font-size:0.48rem;letter-spacing:0.15em;color:var(--text-muted);}
-
-    /* ── Tank strip ── */
-    .tank-track{width:100%;overflow:hidden;height:80px;position:relative;}
-    .tank-track::after{content:'';position:absolute;bottom:14px;left:0;right:0;height:2px;background:repeating-linear-gradient(90deg,var(--green-dim) 0px,var(--green-dim) 20px,transparent 20px,transparent 40px);opacity:0.4;animation:road-scroll 0.4s linear infinite;}
-    @keyframes road-scroll{from{background-position:0 0}to{background-position:-40px 0}}
-    .tank{position:absolute;bottom:16px;left:-160px;animation:tank-drive 8s linear infinite;filter:drop-shadow(0 0 6px var(--green-glow));}
-    @keyframes tank-drive{0%{left:-160px}100%{left:calc(100% + 20px)}}
-    .tank svg{width:140px;height:55px;}
-    .exhaust{position:absolute;right:-8px;bottom:28px;}
-    .puff{position:absolute;width:8px;height:8px;border-radius:50%;background:rgba(57,255,20,0.3);animation:puff-up 0.8s ease-out infinite;}
-    .puff:nth-child(2){animation-delay:0.27s}.puff:nth-child(3){animation-delay:0.54s}
-    @keyframes puff-up{0%{transform:translateY(0) scale(0.5);opacity:0.5}100%{transform:translateY(-24px) scale(2);opacity:0}}
-    .bottom-label{font-size:0.55rem;letter-spacing:0.4em;color:#0e2208;text-align:center;}
-
-    /* ══ COMMENTS ══ */
-    .comments-section{width:100%;background:var(--panel);border:2px solid var(--border);border-radius:4px;overflow:hidden;position:relative;box-shadow:0 0 0 1px rgba(57,255,20,0.08),0 0 30px rgba(57,255,20,0.04);}
-    .comments-section::before,.comments-section::after{content:'';position:absolute;width:16px;height:16px;border-color:var(--green);border-style:solid;z-index:2;pointer-events:none;}
-    .comments-section::before{top:-1px;left:-1px;border-width:2px 0 0 2px;}
-    .comments-section::after{bottom:-1px;right:-1px;border-width:0 2px 2px 0;}
-
-    .comments-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);background:rgba(57,255,20,0.03);flex-wrap:wrap;gap:8px;}
-    .comments-title{font-family:'Orbitron',monospace;font-size:0.65rem;letter-spacing:0.3em;color:var(--green);}
-    .comments-meta{font-size:0.55rem;letter-spacing:0.15em;color:var(--text-muted);}
-    .expiry-badge{font-size:0.5rem;letter-spacing:0.1em;color:var(--amber);background:rgba(255,179,0,0.08);border:1px solid rgba(255,179,0,0.2);border-radius:2px;padding:2px 8px;}
-
-    .comments-feed{max-height:480px;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px;scrollbar-width:thin;scrollbar-color:var(--green-dim) transparent;}
-    .comments-feed::-webkit-scrollbar{width:4px}
-    .comments-feed::-webkit-scrollbar-track{background:transparent}
-    .comments-feed::-webkit-scrollbar-thumb{background:var(--green-dim);border-radius:2px}
-
-    .comment-empty{text-align:center;padding:40px 0;color:var(--text-muted);font-size:0.65rem;letter-spacing:0.2em;}
-    .comment-card{background:var(--panel2);border:1px solid var(--border);border-radius:3px;padding:14px 16px 10px;transition:border-color 0.2s;animation:slide-in 0.3s ease;}
-    @keyframes slide-in{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
-    .comment-card:hover{border-color:var(--border2);}
-    .comment-card.is-reply{margin-left:28px;border-left:2px solid var(--green-dim);background:rgba(57,255,20,0.02);}
-
-    .comment-top{display:flex;align-items:center;gap:10px;margin-bottom:7px;flex-wrap:wrap;}
-    .comment-avatar{width:28px;height:28px;border-radius:50%;background:var(--green-dim);display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:700;color:var(--bg);flex-shrink:0;font-family:'Orbitron',monospace;}
-    .comment-name{font-family:'Orbitron',monospace;font-size:0.65rem;font-weight:700;color:var(--green);letter-spacing:0.05em;}
-    .comment-time{font-size:0.5rem;color:var(--text-muted);letter-spacing:0.1em;}
-    .comment-replying-to{font-size:0.58rem;color:var(--text-muted);margin-bottom:5px;}
-    .comment-replying-to span{color:var(--green-dim);}
-    .comment-body{font-size:0.78rem;color:var(--text);line-height:1.6;margin-bottom:10px;word-break:break-word;white-space:pre-wrap;}
-
-    .comment-actions{display:flex;gap:14px;align-items:center;flex-wrap:wrap;}
-    .action-btn{background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:5px;font-family:'Share Tech Mono',monospace;font-size:0.6rem;color:var(--text-muted);letter-spacing:0.1em;transition:color 0.15s;padding:0;}
-    .action-btn:hover{color:var(--text-dim);}
-    .action-btn.liked{color:var(--green);}
-    .like-icon{font-size:0.85rem;line-height:1;}
-    .like-count{font-family:'Orbitron',monospace;font-size:0.55rem;min-width:1.5ch;}
-    .reply-btn:hover{color:var(--amber);}
-
-    .show-replies-btn{background:none;border:none;cursor:pointer;font-family:'Share Tech Mono',monospace;font-size:0.55rem;color:var(--green-dim);letter-spacing:0.1em;padding:5px 0 0;display:block;transition:color 0.15s;}
-    .show-replies-btn:hover{color:var(--green);}
-    .replies-container{display:flex;flex-direction:column;gap:10px;margin-top:10px;}
-
-    .compose-area{border-top:1px solid var(--border);padding:16px;background:rgba(0,0,0,0.15);transition:background 0.2s;}
-    .compose-area.reply-mode{background:rgba(57,255,20,0.03);}
-    .reply-banner{display:none;align-items:center;justify-content:space-between;margin-bottom:10px;font-size:0.55rem;color:var(--amber);letter-spacing:0.1em;}
-    .reply-banner.active{display:flex;}
-    .cancel-reply-btn{background:none;border:none;cursor:pointer;color:var(--red);font-size:0.75rem;font-family:'Share Tech Mono',monospace;}
-
-    .compose-row{display:flex;gap:10px;margin-bottom:10px;}
-    .compose-input{background:var(--panel);border:1px solid var(--border);border-radius:3px;color:var(--text);font-family:'Share Tech Mono',monospace;font-size:0.72rem;padding:8px 12px;outline:none;transition:border-color 0.2s,box-shadow 0.2s;min-width:0;}
-    .compose-input::placeholder{color:var(--text-muted);}
-    .compose-input:focus{border-color:var(--green-dim);box-shadow:0 0 8px rgba(57,255,20,0.1);}
-    .compose-name{max-width:190px;flex:1;}
-    textarea.compose-input{width:100%;resize:none;height:72px;display:block;margin-bottom:10px;}
-
-    .compose-footer{display:flex;justify-content:space-between;align-items:center;}
-    .char-count{font-size:0.5rem;color:var(--text-muted);letter-spacing:0.1em;}
-    .submit-btn{font-family:'Orbitron',monospace;font-size:0.6rem;font-weight:700;letter-spacing:0.2em;padding:8px 20px;background:transparent;border:1px solid var(--green-dim);color:var(--green);border-radius:3px;cursor:pointer;transition:all 0.15s;}
-    .submit-btn:hover{background:rgba(57,255,20,0.08);border-color:var(--green);box-shadow:0 0 10px var(--green-glow);}
-    .submit-btn:active{transform:scale(0.97);}
-
-    .feed-status{text-align:center;font-size:0.55rem;letter-spacing:0.2em;color:var(--text-muted);padding:8px 16px;}
-    .pulse{animation:pulse-anim 1.2s infinite;}
-    @keyframes pulse-anim{0%,100%{opacity:0.4}50%{opacity:1}}
-
-    /* shake animation for wrong pin */
-    @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
-    .shake{animation:shake 0.4s ease;}
-  </style>
+  /* shake animation for wrong pin */
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+  .shake{animation:shake 0.4s ease;}
+</style>
 </head>
 <body>
 <div class="container">
   <h1>Dababati</h1>
 
-  <!-- ── Meter Panel ── -->
   <div class="meter-panel">
     <div class="meter-label">// UNIT COUNTER — ACTIVE //</div>
     <span class="counter-display" id="counter">---</span>
@@ -253,22 +113,19 @@
     </div>
 
     <div class="controls-area">
-      <!-- action buttons -->
       <div class="controls">
         <button class="btn" id="btn-dec" onclick="change(-1)" disabled>−</button>
         <button class="btn" id="btn-inc" onclick="change(1)"  disabled>+</button>
-        <button class="btn btn-reset"    onclick="tryReset()"  disabled id="btn-rst">RESET</button>
-         <button class="btn btn-reset"    onclick="doLock()"  disabled id="btn-lck">Lock</button>
+        <button class="btn btn-reset" onclick="tryReset()"  disabled id="btn-rst">RESET</button>
+        <button class="btn btn-reset" onclick="doLock()"  disabled id="btn-lck">Lock</button>
       </div>
 
-      <!-- PIN lock -->
       <div class="lock-zone" id="lock-zone">
         <div class="lock-status" id="lock-status">
           <span class="lock-icon">🔒</span>
           <span id="lock-label">ENTER PIN TO UNLOCK</span>
         </div>
 
-        <!-- dots -->
         <div class="pin-dots" id="pin-dots">
           <div class="pin-dot" id="d0"></div>
           <div class="pin-dot" id="d1"></div>
@@ -276,7 +133,6 @@
           <div class="pin-dot" id="d3"></div>
         </div>
 
-        <!-- keypad -->
         <div class="pin-keypad" id="pin-keypad">
           <button class="pin-key" onclick="pinKey('1')">1</button>
           <button class="pin-key" onclick="pinKey('2')">2</button>
@@ -298,35 +154,7 @@
     </div>
   </div>
 
-  <!-- ── Animated Tank ── -->
-  <div class="tank-track">
-    <div class="tank">
-      <svg viewBox="0 0 140 55" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="10" y="26" width="110" height="22" rx="3" fill="#1a3d10" stroke="#39ff14" stroke-width="1.2"/>
-        <rect x="14" y="36" width="104" height="10" rx="2" fill="#122a0b" stroke="#2a6018" stroke-width="0.8"/>
-        <rect x="40" y="16" width="52" height="16" rx="3" fill="#1e4a12" stroke="#39ff14" stroke-width="1.2"/>
-        <polygon points="45,16 88,16 84,8 50,8" fill="#234e15" stroke="#39ff14" stroke-width="1"/>
-        <rect x="88" y="9" width="46" height="5" rx="1" fill="#1a3d10" stroke="#39ff14" stroke-width="1"/>
-        <rect x="130" y="7" width="8" height="9" rx="1" fill="#1a3d10" stroke="#4aff24" stroke-width="1"/>
-        <rect x="8" y="28" width="8" height="12" rx="1" fill="#122a0b" stroke="#2a6018" stroke-width="0.8"/>
-        <circle cx="58" cy="10" r="4" fill="#1e4a12" stroke="#39ff14" stroke-width="0.8"/>
-        <rect x="56" y="5" width="4" height="6" rx="0.5" fill="#1e4a12" stroke="#39ff14" stroke-width="0.8"/>
-        <rect x="12" y="38" width="104" height="4" rx="1" fill="#0e1f08"/>
-        <g id="w1"><circle cx="26" cy="44" r="7" fill="#0e1f08" stroke="#39ff14" stroke-width="1.2"/><circle cx="26" cy="44" r="3" fill="#1a3d10" stroke="#39ff14" stroke-width="0.8"/><line x1="26" y1="37" x2="26" y2="51" stroke="#39ff14" stroke-width="0.6"/><line x1="19" y1="44" x2="33" y2="44" stroke="#39ff14" stroke-width="0.6"/></g>
-        <g id="w2"><circle cx="54" cy="44" r="7" fill="#0e1f08" stroke="#39ff14" stroke-width="1.2"/><circle cx="54" cy="44" r="3" fill="#1a3d10" stroke="#39ff14" stroke-width="0.8"/><line x1="54" y1="37" x2="54" y2="51" stroke="#39ff14" stroke-width="0.6"/><line x1="47" y1="44" x2="61" y2="44" stroke="#39ff14" stroke-width="0.6"/></g>
-        <g id="w3"><circle cx="82" cy="44" r="7" fill="#0e1f08" stroke="#39ff14" stroke-width="1.2"/><circle cx="82" cy="44" r="3" fill="#1a3d10" stroke="#39ff14" stroke-width="0.8"/><line x1="82" y1="37" x2="82" y2="51" stroke="#39ff14" stroke-width="0.6"/><line x1="75" y1="44" x2="89" y2="44" stroke="#39ff14" stroke-width="0.6"/></g>
-        <g id="w4"><circle cx="108" cy="44" r="7" fill="#0e1f08" stroke="#39ff14" stroke-width="1.2"/><circle cx="108" cy="44" r="3" fill="#1a3d10" stroke="#39ff14" stroke-width="0.8"/><line x1="108" y1="37" x2="108" y2="51" stroke="#39ff14" stroke-width="0.6"/><line x1="101" y1="44" x2="115" y2="44" stroke="#39ff14" stroke-width="0.6"/></g>
-        <rect x="12" y="50" width="104" height="4" rx="1" fill="#0e1f08" stroke="#1e3d0f" stroke-width="0.5"/>
-        <text x="60" y="34" font-size="9" fill="#39ff14" opacity="0.5" font-family="serif">✡</text>
-      </svg>
-      <div class="exhaust" style="right:auto;left:-12px;bottom:28px;">
-        <div class="puff"></div><div class="puff"></div><div class="puff"></div>
-      </div>
-    </div>
-  </div>
-  <div class="bottom-label">דבבתי // MBT MERKAVA IV // IDF ARMORED CORPS</div>
-
-  <!-- ══ COMMENT SECTION ══ -->
+  <!-- ── COMMENT SECTION ── -->
   <div class="comments-section">
     <div class="comments-header">
       <span class="comments-title">// FIELD COMMS — LIVE FEED //</span>
@@ -337,423 +165,69 @@
     </div>
     <div class="comments-feed" id="feed">
       <div class="comment-empty pulse" id="empty-state">// NO TRANSMISSIONS — BE THE FIRST //</div>
-    </div>
-    <div class="feed-status" id="feed-status"></div>
-    <div class="compose-area" id="compose-area">
-      <div class="reply-banner" id="reply-banner">
-        <span>↩ REPLYING TO: <span id="reply-target-label" style="color:var(--green);font-family:'Orbitron',monospace;"></span></span>
-        <button class="cancel-reply-btn" onclick="cancelReply()">✕ CANCEL</button>
+      <!-- Example comment -->
+      <div class="comment-card" id="comment-1" onclick="selectComment('comment-1')">
+        <div class="comment-body">Alpha unit reporting in.</div>
       </div>
-      <div class="compose-row">
-        <input class="compose-input compose-name" id="inp-name" type="text" placeholder="CALLSIGN / NAME" maxlength="30" autocomplete="off">
-      </div>
-      <textarea class="compose-input" id="inp-text" placeholder="TRANSMIT YOUR MESSAGE… (Enter to send, Shift+Enter for newline)" maxlength="500"></textarea>
-      <div class="compose-footer">
-        <span class="char-count" id="char-count">0 / 500</span>
-        <button class="submit-btn" onclick="submitComment()">▶ TRANSMIT</button>
+      <div class="comment-card" id="comment-2" onclick="selectComment('comment-2')">
+        <div class="comment-body">Bravo squad on standby.</div>
       </div>
     </div>
   </div>
-
-</div><!-- /container -->
+</div>
 
 <script>
-/* ══════════════════════════════════════════════
-   BACKEND CONFIG — set your Render URL here
-══════════════════════════════════════════════ */
-const API = 'https://dababati.onrender.com';
+let enteredPin = "";
+let selectedCommentId = null;
+const MASTER_DELETE_PIN = "4721";
 
-const TTL = 3 * 24 * 60 * 60 * 1000;
-const MAX_COUNT = 999;
-const CORRECT_PIN = '4721';
-const UNLOCK_DURATION = 30 * 1000; // 30 seconds session unlock
-
-/* ══════════════════════════════════════════════
-   COUNTER — backed by PostgreSQL via REST API
-══════════════════════════════════════════════ */
-let count = 0;
-const counterEl = document.getElementById('counter');
-const barEl     = document.getElementById('bar');
-const statusEl  = document.getElementById('status');
-const statuses  = ['STANDBY','ARMED','ENGAGING TARGET','ADVANCING','HOLDING POSITION','FIRE SUPPORT ACTIVE','RELOADING','MOVING TO FLANK'];
-
-function pad(n){ return String(Math.max(0,Math.min(MAX_COUNT,Math.round(n)))).padStart(3,'0'); }
-function countCls(n){ return n>=750?'danger':n>=500?'warning':''; }
-
-function renderCounter(){
-  counterEl.textContent = pad(count);
-  const c = countCls(count);
-  counterEl.className = 'counter-display '+c;
-  barEl.className = 'bar-fill '+c;
-  barEl.style.width = (count/MAX_COUNT*100)+'%';
-}
-
-async function loadCounter(){
-  try {
-    const r = await fetch(`${API}/counter`);
-    const data = await r.json();
-    if(!isNaN(data.value)) count = Math.max(0, Math.min(MAX_COUNT, data.value));
-  } catch(e){ count = 0; }
-  renderCounter();
-}
-
-async function saveCounter(){
-  try {
-    await fetch(`${API}/counter`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ value: count })
-    });
-  } catch(e){}
-}
-
-async function change(d){
-  if(!unlocked) return;
-  count = Math.max(0, Math.min(MAX_COUNT, count + d));
-  statusEl.textContent = statuses[Math.floor(Math.random()*statuses.length)];
-  counterEl.style.opacity='0.4';
-  setTimeout(()=>counterEl.style.opacity='1', 80);
-  renderCounter();
-  await saveCounter();
-}
-
-async function tryReset(){
-  if(!unlocked) return;
-  count = 0;
-  statusEl.textContent = 'STANDBY';
-  renderCounter();
-  await saveCounter();
-}
-
-/* ══════════════════════════════════════════════
-   PIN LOCK SYSTEM
-══════════════════════════════════════════════ */
-let unlocked = false;
-let pinInput  = '';
-let unlockTimer = null;
-let unlockExpiry = 0;
-let timerInterval = null;
-
-function pinKey(digit){
-  if(unlocked) return;
-  if(pinInput.length >= 4) return;
-  pinInput += digit;
+function pinKey(digit) {
+  if(enteredPin.length>=4) return;
+  enteredPin += digit;
   updateDots();
-  if(pinInput.length === 4) checkPin();
+  if(enteredPin.length===4) checkPin();
 }
 
-function pinDel(){
-  if(unlocked) return;
-  pinInput = pinInput.slice(0,-1);
+function pinDel() {
+  enteredPin = enteredPin.slice(0,-1);
   updateDots();
 }
 
-function updateDots(){
+function updateDots() {
   for(let i=0;i<4;i++){
-    const d = document.getElementById('d'+i);
-    d.className = 'pin-dot' + (i < pinInput.length ? ' filled' : '');
+    const dot=document.getElementById('d'+i);
+    dot.classList.toggle('filled',i<enteredPin.length);
   }
 }
 
-function checkPin(){
-  if(pinInput === CORRECT_PIN){
-    doUnlock();
-  } else {
-    // wrong — shake & flash red
-    const dots = document.getElementById('pin-dots');
-    dots.classList.add('shake');
-    for(let i=0;i<4;i++) document.getElementById('d'+i).className='pin-dot error';
-    setTimeout(()=>{
-      dots.classList.remove('shake');
-      pinInput = '';
-      updateDots();
-    }, 600);
+function selectComment(commentId) {
+  if(selectedCommentId){
+    const prev = document.getElementById(selectedCommentId);
+    if(prev) prev.classList.remove('selected');
   }
+  selectedCommentId = commentId;
+  const el = document.getElementById(commentId);
+  if(el) el.classList.add('selected');
 }
 
-function doUnlock(){
-  unlocked = true;
-  pinInput = '';
-  unlockExpiry = Date.now() + UNLOCK_DURATION;
-
-  // enable buttons
-  ['btn-dec','btn-inc','btn-rst','btn-lck'].forEach(id=>{
-    document.getElementById(id).disabled = false;
-  });
-
-  // hide keypad, show lock status
-  document.getElementById('pin-keypad').style.display = 'none';
-  document.getElementById('pin-dots').style.display   = 'none';
-
-  const ls = document.getElementById('lock-status');
-  ls.classList.add('unlocked');
-  ls.innerHTML = `<span class="lock-icon">🔓</span><span id="lock-label">UNLOCKED — <span id="unlock-timer" class="unlock-timer"></span></span>`;
-
-  // start countdown
-  if(timerInterval) clearInterval(timerInterval);
-  timerInterval = setInterval(tickUnlock, 1000);
-  tickUnlock();
-}
-
-function tickUnlock(){
-  const rem = unlockExpiry - Date.now();
-  if(rem <= 0){ doLock(); return; }
-  const m = Math.floor(rem/60000);
-  const s = Math.floor((rem%60000)/1000);
-  const el = document.getElementById('unlock-timer');
-  if(el) el.textContent = `AUTO-LOCK IN ${m}:${String(s).padStart(2,'0')}`;
-}
-
-function doLock(){
-  unlocked = false;
-  pinInput = '';
-  if(timerInterval){ clearInterval(timerInterval); timerInterval=null; }
-
-  ['btn-dec','btn-inc','btn-rst','btn-lck'].forEach(id=>{
-    document.getElementById(id).disabled = true;
-  });
-
-  document.getElementById('pin-keypad').style.display = 'grid';
-  document.getElementById('pin-dots').style.display   = 'flex';
+function checkPin() {
+  if(enteredPin===MASTER_DELETE_PIN){
+    if(selectedCommentId){
+      const comment=document.getElementById(selectedCommentId);
+      if(comment) comment.remove();
+      selectedCommentId = null;
+    }
+    enteredPin="";
+    updateDots();
+    return;
+  }
+  // normal unlock logic
+  document.getElementById('status').innerText="PIN INCORRECT";
+  document.getElementById('lock-zone').classList.add('shake');
+  setTimeout(()=>document.getElementById('lock-zone').classList.remove('shake'),400);
+  enteredPin="";
   updateDots();
-
-  const ls = document.getElementById('lock-status');
-  ls.classList.remove('unlocked');
-  ls.innerHTML = `<span class="lock-icon">🔒</span><span id="lock-label">ENTER PIN TO UNLOCK</span>`;
 }
-
-/* ══════════════════════════════════════════════
-   WHEEL ANIMATION
-══════════════════════════════════════════════ */
-let wa=0;
-const wh=[
-  {el:document.getElementById('w1'),cx:26,cy:44},
-  {el:document.getElementById('w2'),cx:54,cy:44},
-  {el:document.getElementById('w3'),cx:82,cy:44},
-  {el:document.getElementById('w4'),cx:108,cy:44}
-];
-(function aW(){ wa=(wa+3)%360; wh.forEach(w=>{ if(w.el) w.el.setAttribute('transform',`rotate(${wa} ${w.cx} ${w.cy})`); }); requestAnimationFrame(aW); })();
-
-/* ══════════════════════════════════════════════
-   COMMENTS — backed by PostgreSQL via REST API
-══════════════════════════════════════════════ */
-let comments    = [];
-let replyState  = null;
-let sessionLiked = new Set();
-
-async function loadComments(){
-  setFeedStatus('LOADING…', true);
-  try {
-    const r = await fetch(`${API}/comments`);
-    const data = await r.json();
-    comments = data.comments || [];
-  } catch(e){ comments=[]; }
-  updateBadge();
-  render();
-  setFeedStatus('');
-}
-
-// saveComments is no longer needed — each action hits the API directly
-
-function prune(){
-  // Server handles pruning; client-side prune only for badge display
-  const cut = Date.now()-TTL;
-  comments = comments.filter(c=>c.ts>cut);
-  comments.forEach(c=>{ if(c.replies) c.replies=c.replies.filter(r=>r.ts>cut); });
-  updateBadge();
-}
-
-function updateBadge(){
-  const el=document.getElementById('expiry-badge');
-  if(!comments.length){ el.textContent='AUTO-CLEAR IN 3D'; return; }
-  const oldest=Math.min(...comments.map(c=>c.ts));
-  const rem=oldest+TTL-Date.now();
-  const h=Math.floor(rem/3600000), m=Math.floor((rem%3600000)/60000);
-  el.textContent=h>24?`CLEARS IN ${Math.ceil(h/24)}D`:h>0?`CLEARS IN ${h}H ${m}M`:`CLEARS IN ${m}M`;
-}
-
-function render(){
-  const feed=document.getElementById('feed');
-  const total=comments.reduce((s,c)=>s+1+(c.replies?c.replies.length:0),0);
-  document.getElementById('signal-count').textContent=`${total} SIGNAL${total!==1?'S':''}`;
-  if(!comments.length){ feed.innerHTML='<div class="comment-empty pulse">// NO TRANSMISSIONS — BE THE FIRST //</div>'; return; }
-  const sorted=[...comments].sort((a,b)=>b.ts-a.ts);
-  feed.innerHTML='';
-  sorted.forEach(c=>feed.appendChild(makeCard(c,false,null)));
-}
-
-function makeCard(c,isReply,parentId){
-  const div=document.createElement('div');
-  div.className='comment-card'+(isReply?' is-reply':'');
-  div.id='c-'+c.id;
-  const init=(c.name||'?').slice(0,2).toUpperCase();
-  const liked=sessionLiked.has(c.id);
-  div.innerHTML=`
-    <div class="comment-top">
-      <div class="comment-avatar" style="background:${avatarColor(c.name)}">${init}</div>
-      <span class="comment-name">${esc(c.name||'ANON')}</span>
-      <span class="comment-time">${ago(c.ts)}</span>
-    </div>
-    ${c.replyToName?`<div class="comment-replying-to">↩ replying to <span>${esc(c.replyToName)}</span></div>`:''}
-    <div class="comment-body">${esc(c.text)}</div>
-    <div class="comment-actions">
-      <button class="action-btn${liked?' liked':''}" id="lb-${c.id}" onclick="toggleLike('${c.id}','${parentId||''}')">
-        <span class="like-icon">${liked?'❤':'🤍'}</span>
-        <span class="like-count" id="lc-${c.id}">${c.likes||0}</span>
-        <span style="letter-spacing:0.05em">${(c.likes||0)===1?'LIKE':'LIKES'}</span>
-      </button>
-      ${!isReply?`<button class="action-btn reply-btn" onclick="startReply('${c.id}','${esc(c.name||'ANON')}')">↩ REPLY</button>`:''}
-    </div>
-    ${!isReply&&c.replies&&c.replies.length?`<button class="show-replies-btn" id="rb-${c.id}" onclick="toggleReplies('${c.id}')">▸ ${c.replies.length} REPL${c.replies.length>1?'IES':'Y'}</button><div class="replies-container" id="rep-${c.id}" style="display:none;"></div>`:''}
-  `;
-  return div;
-}
-
-function toggleReplies(id){
-  const container=document.getElementById('rep-'+id);
-  const btn=document.getElementById('rb-'+id);
-  const c=comments.find(x=>x.id===id);
-  if(!c||!container) return;
-  const open=container.style.display!=='none';
-  if(open){ container.style.display='none'; btn.textContent=`▸ ${c.replies.length} REPL${c.replies.length>1?'IES':'Y'}`; }
-  else {
-    container.style.display='flex'; container.style.flexDirection='column'; container.style.gap='10px'; container.innerHTML='';
-    [...(c.replies||[])].sort((a,b)=>a.ts-b.ts).forEach(r=>container.appendChild(makeCard(r,true,id)));
-    btn.textContent=`▾ ${c.replies.length} REPL${c.replies.length>1?'IES':'Y'}`;
-  }
-}
-
-function startReply(id,name){
-  replyState={id,name};
-  document.getElementById('reply-banner').classList.add('active');
-  document.getElementById('reply-target-label').textContent=name;
-  document.getElementById('compose-area').classList.add('reply-mode');
-  // Clear name field when replying
-  document.getElementById('inp-name').value='';
-  document.getElementById('inp-text').focus();
-  document.getElementById('inp-text').scrollIntoView({behavior:'smooth',block:'nearest'});
-}
-function cancelReply(){
-  replyState=null;
-  document.getElementById('reply-banner').classList.remove('active');
-  document.getElementById('compose-area').classList.remove('reply-mode');
-}
-
-async function toggleLike(id, parentId){
-  const isLiked = sessionLiked.has(id);
-  const delta   = isLiked ? -1 : 1;
-
-  // Optimistic UI update
-  let target;
-  if(parentId){ const par=comments.find(c=>c.id===parentId); target=par&&par.replies?par.replies.find(r=>r.id===id):null; }
-  else target=comments.find(c=>c.id===id);
-  if(!target) return;
-
-  if(isLiked){ sessionLiked.delete(id); target.likes=Math.max(0,(target.likes||0)-1); }
-  else{ sessionLiked.add(id); target.likes=(target.likes||0)+1; }
-
-  const btn=document.getElementById('lb-'+id);
-  const lc=document.getElementById('lc-'+id);
-  if(btn){ const nl=sessionLiked.has(id); btn.className='action-btn'+(nl?' liked':''); btn.querySelector('.like-icon').textContent=nl?'❤':'🤍'; btn.lastElementChild.textContent=target.likes===1?'LIKE':'LIKES'; }
-  if(lc) lc.textContent=target.likes;
-
-  // Persist to DB
-  try {
-    await fetch(`${API}/comments/${id}/like`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ delta })
-    });
-  } catch(e){}
-}
-
-async function submitComment(){
-  const nameEl = document.getElementById('inp-name');
-  const textEl = document.getElementById('inp-text');
-  const name = nameEl.value.trim();
-  const text = textEl.value.trim();
-
-  // Name is required for both comments and replies
-  if(!name){ flash(nameEl); nameEl.focus(); return; }
-  // Text is always required
-  if(!text){ flash(textEl); return; }
-
-  const id = Date.now().toString(36)+Math.random().toString(36).slice(2,5);
-
-  const body = {
-    id,
-    name,
-    text,
-    parentId:     replyState ? replyState.id   : undefined,
-    replyToName:  replyState ? replyState.name : undefined
-  };
-
-  try {
-    const r = await fetch(`${API}/comments`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-    const entry = await r.json();
-    if(!r.ok) { console.error(entry); return; }
-
-    if(replyState){
-      const par = comments.find(c=>c.id===replyState.id);
-      if(par){ if(!par.replies) par.replies=[]; par.replies.push({...entry, replies:[]}); }
-      cancelReply();
-    } else {
-      if(comments.length>=120) comments.sort((a,b)=>a.ts-b.ts).splice(0,1);
-      comments.unshift({...entry, replies:[]});
-    }
-  } catch(e){ console.error(e); return; }
-
-  textEl.value='';
-  nameEl.value='';
-  document.getElementById('char-count').textContent='0 / 500';
-  render();
-  document.getElementById('feed').scrollTop=0;
-}
-
-function setFeedStatus(msg,pulse=false){
-  const el=document.getElementById('feed-status');
-  el.textContent=msg; el.className='feed-status'+(pulse?' pulse':'');
-}
-function flash(el){ el.style.borderColor='var(--red)'; el.style.boxShadow='0 0 8px rgba(255,42,42,0.3)'; setTimeout(()=>{ el.style.borderColor=''; el.style.boxShadow=''; },600); }
-function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
-function ago(ts){ const s=Math.floor((Date.now()-ts)/1000); if(s<60)return'JUST NOW'; if(s<3600)return Math.floor(s/60)+'M AGO'; if(s<86400)return Math.floor(s/3600)+'H AGO'; return Math.floor(s/86400)+'D AGO'; }
-function avatarColor(name){ const colors=['#1a7a00','#1a5a4a','#1a4a7a','#4a2a7a','#7a2a4a','#5a4a1a','#2a5a2a']; let h=0; for(let i=0;i<(name||'').length;i++) h=((h<<5)-h)+name.charCodeAt(i); return colors[Math.abs(h)%colors.length]; }
-
-document.getElementById('inp-text').addEventListener('input',function(){ document.getElementById('char-count').textContent=`${this.value.length} / 500`; });
-document.getElementById('inp-text').addEventListener('keydown',function(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); submitComment(); } });
-
-/* polling */
-async function pollComments(){
-  try{
-    const r = await fetch(`${API}/comments`);
-    const data = await r.json();
-    const fresh = data.comments || [];
-    if(JSON.stringify(fresh) !== JSON.stringify(comments)){
-      comments = fresh;
-      updateBadge();
-      render();
-    }
-  }catch(e){}
-}
-async function pollCounter(){
-  try{
-    const r = await fetch(`${API}/counter`);
-    const data = await r.json();
-    const v = parseInt(data.value, 10);
-    if(!isNaN(v) && v !== count){ count=Math.max(0,Math.min(MAX_COUNT,v)); renderCounter(); }
-  }catch(e){}
-}
-setInterval(pollComments, 20000);
-setInterval(pollCounter, 10000);
-setInterval(()=>{ if(comments.length) render(); }, 60000);
-
-/* ── Init ── */
-loadCounter();
-loadComments();
 </script>
 </body>
 </html>
