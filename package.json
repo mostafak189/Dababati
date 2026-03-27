@@ -1,0 +1,18 @@
+{
+  "name": "dababati-backend",
+  "version": "1.0.0",
+  "description": "Backend API for Dababati counter + comments",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "pg": "^8.11.3"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
