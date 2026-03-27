@@ -15,6 +15,14 @@ const pool = new Pool({
 app.use(cors());
 app.use(express.json());
 
+// Serve frontend files
+app.use(express.static(__dirname));
+
+// Root route
+app.get('/', (req, res) => {
+  res.sendFile(__dirname + '/index.html');
+});
+
 // ── DB Init — runs once on startup ──────────────────────────────────────────
 async function initDB() {
   const client = await pool.connect();
