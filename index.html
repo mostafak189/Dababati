@@ -27,7 +27,7 @@
         <button class="btn" id="btn-dec" onclick="change(-1)" disabled>−</button>
         <button class="btn" id="btn-inc" onclick="change(1)" disabled>+</button>
         <button class="btn btn-reset" onclick="tryReset()" disabled id="btn-rst">RESET</button>
-        <button class="btn btn-reset" onclick="doLock()" disabled id="btn-lck">Lock🔒</button>
+        <button class="btn btn-reset" onclick="doLock()" disabled id="btn-lck">RESET</button>
       </div>
 
       <!-- PIN lock -->
@@ -67,34 +67,85 @@
     </div>
   </div>
 
-  <!-- Remaining page content unchanged... tank svg, comments section, etc -->
+  <!-- ── Animated Tank ── -->
+  <div class="tank-track">
+    <div class="tank">
+      <svg viewBox="0 0 140 55" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="10" y="26" width="110" height="22" rx="3" fill="#1a3d10" stroke="#39ff14" stroke-width="1.2"/>
+        <rect x="14" y="36" width="104" height="10" rx="2" fill="#122a0b" stroke="#2a6018" stroke-width="0.8"/>
+        <rect x="40" y="16" width="52" height="16" rx="3" fill="#1e4a12" stroke="#39ff14" stroke-width="1.2"/>
+        <polygon points="45,16 88,16 84,8 50,8" fill="#234e15" stroke="#39ff14" stroke-width="1"/>
+        <rect x="88" y="9" width="46" height="5" rx="1" fill="#1a3d10" stroke="#39ff14" stroke-width="1"/>
+        <rect x="130" y="7" width="8" height="9" rx="1" fill="#1a3d10" stroke="#4aff24" stroke-width="1"/>
+        <rect x="8" y="28" width="8" height="12" rx="1" fill="#122a0b" stroke="#2a6018" stroke-width="0.8"/>
+        <circle cx="58" cy="10" r="4" fill="#1e4a12" stroke="#39ff14" stroke-width="0.8"/>
+        <rect x="56" y="5" width="4" height="6" rx="0.5" fill="#1e4a12" stroke="#39ff14" stroke-width="0.8"/>
+        <rect x="12" y="38" width="104" height="4" rx="1" fill="#0e1f08"/>
+        <g id="w1"><circle cx="26" cy="44" r="7" fill="#0e1f08" stroke="#39ff14" stroke-width="1.2"/><circle cx="26" cy="44" r="3" fill="#1a3d10" stroke="#39ff14" stroke-width="0.8"/><line x1="26" y1="37" x2="26" y2="51" stroke="#39ff14" stroke-width="0.6"/><line x1="19" y1="44" x2="33" y2="44" stroke="#39ff14" stroke-width="0.6"/></g>
+        <g id="w2"><circle cx="54" cy="44" r="7" fill="#0e1f08" stroke="#39ff14" stroke-width="1.2"/><circle cx="54" cy="44" r="3" fill="#1a3d10" stroke="#39ff14" stroke-width="0.8"/><line x1="54" y1="37" x2="54" y2="51" stroke="#39ff14" stroke-width="0.6"/><line x1="47" y1="44" x2="61" y2="44" stroke="#39ff14" stroke-width="0.6"/></g>
+        <g id="w3"><circle cx="82" cy="44" r="7" fill="#0e1f08" stroke="#39ff14" stroke-width="1.2"/><circle cx="82" cy="44" r="3" fill="#1a3d10" stroke="#39ff14" stroke-width="0.8"/><line x1="82" y1="37" x2="82" y2="51" stroke="#39ff14" stroke-width="0.6"/><line x1="75" y1="44" x2="89" y2="44" stroke="#39ff14" stroke-width="0.6"/></g>
+        <g id="w4"><circle cx="108" cy="44" r="7" fill="#0e1f08" stroke="#39ff14" stroke-width="1.2"/><circle cx="108" cy="44" r="3" fill="#1a3d10" stroke="#39ff14" stroke-width="0.8"/><line x1="108" y1="37" x2="108" y2="51" stroke="#39ff14" stroke-width="0.6"/><line x1="101" y1="44" x2="115" y2="44" stroke="#39ff14" stroke-width="0.6"/></g>
+        <rect x="12" y="50" width="104" height="4" rx="1" fill="#0e1f08" stroke="#1e3d0f" stroke-width="0.5"/>
+        <text x="60" y="34" font-size="9" fill="#39ff14" opacity="0.5" font-family="serif">✡</text>
+      </svg>
+      <div class="exhaust" style="right:auto;left:-12px;bottom:28px;">
+        <div class="puff"></div><div class="puff"></div><div class="puff"></div>
+      </div>
+    </div>
+  </div>
+  <div class="bottom-label">דבבתי // MBT MERKAVA IV // IDF ARMORED CORPS</div>
+
+  <!-- ══ COMMENT SECTION ══ -->
+  <div class="comments-section">
+    <div class="comments-header">
+      <span class="comments-title">// FIELD COMMS — LIVE FEED //</span>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <span class="expiry-badge" id="expiry-badge">AUTO-CLEAR IN 3D</span>
+        <span class="comments-meta" id="signal-count">0 SIGNALS</span>
+      </div>
+    </div>
+    <div class="comments-feed" id="feed">
+      <div class="comment-empty pulse" id="empty-state">// NO TRANSMISSIONS — BE THE FIRST //</div>
+    </div>
+    <div class="feed-status" id="feed-status"></div>
+    <div class="compose-area" id="compose-area">
+      <div class="reply-banner" id="reply-banner">
+        <span>↩ REPLYING TO: <span id="reply-target-label" style="color:var(--green);font-family:'Orbitron',monospace;"></span></span>
+        <button class="cancel-reply-btn" onclick="cancelReply()">✕ CANCEL</button>
+      </div>
+      <div class="compose-row">
+        <input class="compose-input compose-name" id="inp-name" type="text" placeholder="CALLSIGN / NAME" maxlength="30" autocomplete="off" />
+      </div>
+      <textarea class="compose-input" id="inp-text" placeholder="TRANSMIT YOUR MESSAGE… (Enter to send, Shift+Enter for newline)" maxlength="500"></textarea>
+      <div class="compose-footer">
+        <span class="char-count" id="char-count">0 / 500</span>
+        <button class="submit-btn" onclick="submitComment()">▶ TRANSMIT</button>
+      </div>
+    </div>
+  </div>
 
 </div><!-- /container -->
 
 <script>
-/* ══════════════════════════════════════════════
-   BACKEND CONFIG — set your Render URL here
-══════════════════════════════════════════════ */
 const API = 'https://dababati.onrender.com';
 
 const TTL = 3 * 24 * 60 * 60 * 1000;
 const MAX_COUNT = 999;
 const UNLOCK_DURATION = 30 * 1000; // 30 seconds session unlock
-let sessionToken = '';  // store token after successful unlock
+let sessionToken = '';
 
-/* ══════════════════════════════════════════════
-   COUNTER — backed by PostgreSQL via REST API
-══════════════════════════════════════════════ */
+// ----- KEEP THE EXISTING FUNCTIONS: pad, countCls, renderCounter etc.
+
 let count = 0;
 const counterEl = document.getElementById('counter');
 const barEl = document.getElementById('bar');
 const statusEl = document.getElementById('status');
-const statuses = ['STANDBY','ARMED','ENGAGING TARGET','ADVANCING','HOLDING POSITION','FIRE SUPPORT ACTIVE','RELOADING','MOVING TO FLANK'];
+const statuses = ['STANDBY', 'ARMED', 'ENGAGING TARGET', 'ADVANCING', 'HOLDING POSITION', 'FIRE SUPPORT ACTIVE', 'RELOADING', 'MOVING TO FLANK'];
 
-function pad(n){ return String(Math.max(0,Math.min(MAX_COUNT,Math.round(n)))).padStart(3,'0'); }
-function countCls(n){ return n>=750?'danger':n>=500?'warning':''; }
+function pad(n) { return String(Math.max(0, Math.min(MAX_COUNT, Math.round(n)))).padStart(3, '0'); }
+function countCls(n) { return n >= 750 ? 'danger' : n >= 500 ? 'warning' : ''; }
 
-function renderCounter(){
+function renderCounter() {
   counterEl.textContent = pad(count);
   const c = countCls(count);
   counterEl.className = 'counter-display ' + c;
@@ -102,77 +153,75 @@ function renderCounter(){
   barEl.style.width = (count / MAX_COUNT * 100) + '%';
 }
 
-async function loadCounter(){
+async function loadCounter() {
   try {
     const r = await fetch(`${API}/counter`);
     const data = await r.json();
-    if(!isNaN(data.value)) count = Math.max(0, Math.min(MAX_COUNT, data.value));
-  } catch(e){
+    if (!isNaN(data.value)) count = Math.max(0, Math.min(MAX_COUNT, data.value));
+  } catch (e) {
     count = 0;
   }
   renderCounter();
 }
 
-async function saveCounter(){
+async function saveCounter() {
   try {
     await fetch(`${API}/counter`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({value: count})
+      body: JSON.stringify({ value: count })
     });
-  } catch(e){}
+  } catch (e) { }
 }
 
-async function change(d){
-  if(!unlocked) return;
+async function change(d) {
+  if (!unlocked) return;
   count = Math.max(0, Math.min(MAX_COUNT, count + d));
-  statusEl.textContent = statuses[Math.floor(Math.random()*statuses.length)];
-  counterEl.style.opacity='0.4';
-  setTimeout(() => counterEl.style.opacity='1', 80);
+  statusEl.textContent = statuses[Math.floor(Math.random() * statuses.length)];
+  counterEl.style.opacity = '0.4';
+  setTimeout(() => counterEl.style.opacity = '1', 80);
   renderCounter();
   await saveCounter();
 }
 
-async function tryReset(){
-  if(!unlocked) return;
+async function tryReset() {
+  if (!unlocked) return;
   count = 0;
   statusEl.textContent = 'STANDBY';
   renderCounter();
   await saveCounter();
 }
 
-/* ══════════════════════════════════════════════
-   PIN LOCK SYSTEM with backend check
-══════════════════════════════════════════════ */
+/* PIN LOCK SYSTEM with backend check */
 let unlocked = false;
 let pinInput = '';
 let unlockTimer = null;
 let unlockExpiry = 0;
 let timerInterval = null;
 
-function pinKey(digit){
-  if(unlocked) return;
-  if(pinInput.length >= 4) return;
+function pinKey(digit) {
+  if (unlocked) return;
+  if (pinInput.length >= 4) return;
   pinInput += digit;
   updateDots();
-  if(pinInput.length === 4) checkPin();
+  if (pinInput.length === 4) checkPin();
 }
 
-function pinDel(){
-  if(unlocked) return;
-  pinInput = pinInput.slice(0,-1);
+function pinDel() {
+  if (unlocked) return;
+  pinInput = pinInput.slice(0, -1);
   updateDots();
 }
 
-function updateDots(){
-  for(let i=0;i<4;i++){
-    const d = document.getElementById('d'+i);
+function updateDots() {
+  for (let i = 0; i < 4; i++) {
+    const d = document.getElementById('d' + i);
     d.className = 'pin-dot' + (i < pinInput.length ? ' filled' : '');
   }
 }
 
-async function checkPin(){
-  if(pinInput.length !== 4) return;
+async function checkPin() {
+  if (pinInput.length !== 4) return;
 
   try {
     const res = await fetch(`${API}/auth/pin`, {
@@ -180,10 +229,10 @@ async function checkPin(){
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ pin: pinInput })
     });
-    if(!res.ok){
+    if (!res.ok) {
       const dots = document.getElementById('pin-dots');
       dots.classList.add('shake');
-      for(let i=0;i<4;i++) document.getElementById('d'+i).className = 'pin-dot error';
+      for (let i = 0; i < 4; i++) document.getElementById('d' + i).className = 'pin-dot error';
       setTimeout(() => {
         dots.classList.remove('shake');
         pinInput = '';
@@ -194,17 +243,17 @@ async function checkPin(){
     const data = await res.json();
     sessionToken = data.token;
     doUnlock();
-  } catch(err){
+  } catch (err) {
     console.error('PIN verification failed:', err);
   }
 }
 
-function doUnlock(){
+function doUnlock() {
   unlocked = true;
   pinInput = '';
   unlockExpiry = Date.now() + UNLOCK_DURATION;
 
-  ['btn-dec','btn-inc','btn-rst','btn-lck'].forEach(id => {
+  ['btn-dec', 'btn-inc', 'btn-rst', 'btn-lck'].forEach(id => {
     document.getElementById(id).disabled = false;
   });
 
@@ -215,26 +264,26 @@ function doUnlock(){
   ls.classList.add('unlocked');
   ls.innerHTML = `<span class="lock-icon">🔓</span><span id="lock-label">UNLOCKED — <span id="unlock-timer" class="unlock-timer"></span></span>`;
 
-  if(timerInterval) clearInterval(timerInterval);
+  if (timerInterval) clearInterval(timerInterval);
   timerInterval = setInterval(tickUnlock, 1000);
   tickUnlock();
 }
 
-function tickUnlock(){
+function tickUnlock() {
   const rem = unlockExpiry - Date.now();
-  if(rem <= 0){ doLock(); return; }
+  if (rem <= 0) { doLock(); return; }
   const m = Math.floor(rem / 60000);
   const s = Math.floor((rem % 60000) / 1000);
   const el = document.getElementById('unlock-timer');
-  if(el) el.textContent = `AUTO-LOCK IN ${m}:${String(s).padStart(2,'0')}`;
+  if (el) el.textContent = `AUTO-LOCK IN ${m}:${String(s).padStart(2, '0')}`;
 }
 
-function doLock(){
+function doLock() {
   unlocked = false;
   pinInput = '';
-  if(timerInterval){ clearInterval(timerInterval); timerInterval = null; }
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
 
-  ['btn-dec','btn-inc','btn-rst','btn-lck'].forEach(id => {
+  ['btn-dec', 'btn-inc', 'btn-rst', 'btn-lck'].forEach(id => {
     document.getElementById(id).disabled = true;
   });
 
@@ -247,9 +296,7 @@ function doLock(){
   ls.innerHTML = `<span class="lock-icon">🔒</span><span id="lock-label">ENTER PIN TO UNLOCK</span>`;
 }
 
-/* ══════════════════════════════════════════════
-   WHEEL ANIMATION
-══════════════════════════════════════════════ */
+// WHEEL ANIMATION
 let wa = 0;
 const wh = [
   { el: document.getElementById('w1'), cx: 26, cy: 44 },
@@ -257,22 +304,237 @@ const wh = [
   { el: document.getElementById('w3'), cx: 82, cy: 44 },
   { el: document.getElementById('w4'), cx: 108, cy: 44 }
 ];
-(function aW(){
+(function aW() {
   wa = (wa + 3) % 360;
   wh.forEach(w => {
-    if(w.el) w.el.setAttribute('transform', `rotate(${wa} ${w.cx} ${w.cy})`);
+    if (w.el) w.el.setAttribute('transform', `rotate(${wa} ${w.cx} ${w.cy})`);
   });
   requestAnimationFrame(aW);
 })();
 
-/* ══════════════════════════════════════════════
-   COMMENTS — backed by PostgreSQL via REST API
-══════════════════════════════════════════════ */
-// [Keep your comments code as is]
-// ------------------
-// The rest of your script including comments rendering,
-// polling, submission, and utilities remain unchanged.
-// ------------------
+/* COMMENTS SYSTEM (all your existing comment code) */
+
+let comments = [];
+let replyState = null;
+let sessionLiked = new Set();
+
+async function loadComments() {
+  setFeedStatus('LOADING…', true);
+  try {
+    const r = await fetch(`${API}/comments`);
+    const data = await r.json();
+    comments = data.comments || [];
+  } catch (e) { comments = []; }
+  updateBadge();
+  render();
+  setFeedStatus('');
+}
+
+function prune() {
+  const cut = Date.now() - TTL;
+  comments = comments.filter(c => c.ts > cut);
+  comments.forEach(c => { if (c.replies) c.replies = c.replies.filter(r => r.ts > cut); });
+  updateBadge();
+}
+
+function updateBadge() {
+  const el = document.getElementById('expiry-badge');
+  if (!comments.length) { el.textContent = 'AUTO-CLEAR IN 3D'; return; }
+  const oldest = Math.min(...comments.map(c => c.ts));
+  const rem = oldest + TTL - Date.now();
+  const h = Math.floor(rem / 3600000), m = Math.floor((rem % 3600000) / 60000);
+  el.textContent = h > 24 ? `CLEARS IN ${Math.ceil(h / 24)}D` : h > 0 ? `CLEARS IN ${h}H ${m}M` : `CLEARS IN ${m}M`;
+}
+
+function render() {
+  const feed = document.getElementById('feed');
+  const total = comments.reduce((s, c) => s + 1 + (c.replies ? c.replies.length : 0), 0);
+  document.getElementById('signal-count').textContent = `${total} SIGNAL${total !== 1 ? 'S' : ''}`;
+  if (!comments.length) { feed.innerHTML = '<div class="comment-empty pulse">// NO TRANSMISSIONS — BE THE FIRST //</div>'; return; }
+  const sorted = [...comments].sort((a, b) => b.ts - a.ts);
+  feed.innerHTML = '';
+  sorted.forEach(c => feed.appendChild(makeCard(c, false, null)));
+}
+
+function makeCard(c, isReply, parentId) {
+  const div = document.createElement('div');
+  div.className = 'comment-card' + (isReply ? ' is-reply' : '');
+  div.id = 'c-' + c.id;
+  const init = (c.name || '?').slice(0, 2).toUpperCase();
+  const liked = sessionLiked.has(c.id);
+  div.innerHTML = `
+    <div class="comment-top">
+      <div class="comment-avatar" style="background:${avatarColor(c.name)}">${init}</div>
+      <span class="comment-name">${esc(c.name || 'ANON')}</span>
+      <span class="comment-time">${ago(c.ts)}</span>
+    </div>
+    ${c.replyToName ? `<div class="comment-replying-to">↩ replying to <span>${esc(c.replyToName)}</span></div>` : ''}
+    <div class="comment-body">${esc(c.text)}</div>
+    <div class="comment-actions">
+      <button class="action-btn${liked ? ' liked' : ''}" id="lb-${c.id}" onclick="toggleLike('${c.id}','${parentId || ''}')">
+        <span class="like-icon">${liked ? '❤' : '🤍'}</span>
+        <span class="like-count" id="lc-${c.id}">${c.likes || 0}</span>
+        <span style="letter-spacing:0.05em">${(c.likes || 0) === 1 ? 'LIKE' : 'LIKES'}</span>
+      </button>
+      ${!isReply ? `<button class="action-btn reply-btn" onclick="startReply('${c.id}','${esc(c.name || 'ANON')}')">↩ REPLY</button>` : ''}
+    </div>
+    ${!isReply && c.replies && c.replies.length ? `<button class="show-replies-btn" id="rb-${c.id}" onclick="toggleReplies('${c.id}')">▸ ${c.replies.length} REPL${c.replies.length > 1 ? 'IES' : 'Y'}</button><div class="replies-container" id="rep-${c.id}" style="display:none;"></div>` : ''}
+  `;
+  return div;
+}
+
+function toggleReplies(id) {
+  const container = document.getElementById('rep-' + id);
+  const btn = document.getElementById('rb-' + id);
+  const c = comments.find(x => x.id === id);
+  if (!c || !container) return;
+  const open = container.style.display !== 'none';
+  if (open) {
+    container.style.display = 'none';
+    btn.textContent = `▸ ${c.replies.length} REPL${c.replies.length > 1 ? 'IES' : 'Y'}`;
+  } else {
+    container.style.display = 'flex';
+    container.style.flexDirection = 'column';
+    container.style.gap = '10px';
+    container.innerHTML = '';
+    [...(c.replies || [])].sort((a, b) => a.ts - b.ts).forEach(r => container.appendChild(makeCard(r, true, id)));
+    btn.textContent = `▾ ${c.replies.length} REPL${c.replies.length > 1 ? 'IES' : 'Y'}`;
+  }
+}
+
+function startReply(id, name) {
+  replyState = { id, name };
+  document.getElementById('reply-banner').classList.add('active');
+  document.getElementById('reply-target-label').textContent = name;
+  document.getElementById('compose-area').classList.add('reply-mode');
+  document.getElementById('inp-name').value = '';
+  document.getElementById('inp-text').focus();
+  document.getElementById('inp-text').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+function cancelReply() {
+  replyState = null;
+  document.getElementById('reply-banner').classList.remove('active');
+  document.getElementById('compose-area').classList.remove('reply-mode');
+}
+
+async function toggleLike(id, parentId) {
+  const isLiked = sessionLiked.has(id);
+  const delta = isLiked ? -1 : 1;
+
+  let target;
+  if (parentId) {
+    const par = comments.find(c => c.id === parentId);
+    target = par && par.replies ? par.replies.find(r => r.id === id) : null;
+  } else target = comments.find(c => c.id === id);
+  if (!target) return;
+
+  if (isLiked) {
+    sessionLiked.delete(id);
+    target.likes = Math.max(0, (target.likes || 0) - 1);
+  } else {
+    sessionLiked.add(id);
+    target.likes = (target.likes || 0) + 1;
+  }
+
+  const btn = document.getElementById('lb-' + id);
+  const lc = document.getElementById('lc-' + id);
+  if (btn) {
+    const nl = sessionLiked.has(id);
+    btn.className = 'action-btn' + (nl ? ' liked' : '');
+    btn.querySelector('.like-icon').textContent = nl ? '❤' : '🤍';
+    btn.lastElementChild.textContent = target.likes === 1 ? 'LIKE' : 'LIKES';
+  }
+  if (lc) lc.textContent = target.likes;
+
+  try {
+    await fetch(`${API}/comments/${id}/like`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ delta })
+    });
+  } catch (e) { }
+}
+
+async function submitComment() {
+  const nameEl = document.getElementById('inp-name');
+  const textEl = document.getElementById('inp-text');
+  const name = nameEl.value.trim();
+  const text = textEl.value.trim();
+
+  if (!name) { flash(nameEl); nameEl.focus(); return; }
+  if (!text) { flash(textEl); return; }
+
+  const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+
+  const body = {
+    id,
+    name,
+    text,
+    parentId: replyState ? replyState.id : undefined,
+    replyToName: replyState ? replyState.name : undefined
+  };
+
+  try {
+    const r = await fetch(`${API}/comments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const entry = await r.json();
+    if (!r.ok) { console.error(entry); return; }
+
+    if (replyState) {
+      const par = comments.find(c => c.id === replyState.id);
+      if (par) { if (!par.replies) par.replies = []; par.replies.push({ ...entry, replies: [] }); }
+      cancelReply();
+    } else {
+      if (comments.length >= 120) comments.sort((a, b) => a.ts - b.ts).splice(0, 1);
+      comments.unshift({ ...entry, replies: [] });
+    }
+  } catch (e) { console.error(e); return; }
+
+  textEl.value = '';
+  nameEl.value = '';
+  document.getElementById('char-count').textContent = '0 / 500';
+  render();
+  document.getElementById('feed').scrollTop = 0;
+}
+
+function setFeedStatus(msg, pulse = false) {
+  const el = document.getElementById('feed-status');
+  el.textContent = msg; el.className = 'feed-status' + (pulse ? ' pulse' : '');
+}
+function flash(el) { el.style.borderColor = 'var(--red)'; el.style.boxShadow = '0 0 8px rgba(255,42,42,0.3)'; setTimeout(() => { el.style.borderColor = ''; el.style.boxShadow = ''; }, 600); }
+function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+function ago(ts) { const s = Math.floor((Date.now() - ts) / 1000); if (s < 60) return 'JUST NOW'; if (s < 3600) return Math.floor(s / 60) + 'M AGO'; if (s < 86400) return Math.floor(s / 3600) + 'H AGO'; return Math.floor(s / 86400) + 'D AGO'; }
+function avatarColor(name) { const colors = ['#1a7a00', '#1a5a4a', '#1a4a7a', '#4a2a7a', '#7a2a4a', '#5a4a1a', '#2a5a2a']; let h = 0; for (let i = 0; i < (name || '').length; i++) h = ((h << 5) - h) + name.charCodeAt(i); return colors[Math.abs(h) % colors.length]; }
+
+document.getElementById('inp-text').addEventListener('input', function () { document.getElementById('char-count').textContent = `${this.value.length} / 500`; });
+document.getElementById('inp-text').addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitComment(); } });
+
+async function pollComments() {
+  try {
+    const r = await fetch(`${API}/comments`);
+    const data = await r.json();
+    const fresh = data.comments || [];
+    if (JSON.stringify(fresh) !== JSON.stringify(comments)) {
+      comments = fresh;
+      updateBadge();
+      render();
+    }
+  } catch (e) { }
+}
+async function pollCounter() {
+  try {
+    const r = await fetch(`${API}/counter`);
+    const data = await r.json();
+    const v = parseInt(data.value, 10);
+    if (!isNaN(v) && v !== count) { count = Math.max(0, Math.min(MAX_COUNT, v)); renderCounter(); }
+  } catch (e) { }
+}
+setInterval(pollComments, 20000);
+setInterval(pollCounter, 10000);
+setInterval(() => { if (comments.length) render(); }, 60000);
 
 /* ── Init ── */
 loadCounter();
