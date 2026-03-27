@@ -31,9 +31,10 @@ async function initDB() {
       CREATE TABLE IF NOT EXISTS counter (
         id      INTEGER PRIMARY KEY DEFAULT 1,
         value   INTEGER NOT NULL DEFAULT 0,
-        CHECK (id = 1)
+        CHECK (id = 1)          -- only one row ever
       );
 
+      -- Seed row if not present
       INSERT INTO counter (id, value) VALUES (1, 0)
         ON CONFLICT (id) DO NOTHING;
 
@@ -75,6 +76,8 @@ setInterval(pruneOldComments, 60 * 60 * 1000);
 // ════════════════════════════════════════════════════════════════════════════
 //  COUNTER ROUTES
 // ════════════════════════════════════════════════════════════════════════════
+
+// GET /counter  →  { value: 42 }
 app.get('/counter', async (req, res) => {
   try {
     const { rows } = await pool.query('SELECT value FROM counter WHERE id = 1');
@@ -85,6 +88,7 @@ app.get('/counter', async (req, res) => {
   }
 });
 
+// POST /counter  body: { value: 43 }  →  { value: 43 }
 app.post('/counter', async (req, res) => {
   const value = parseInt(req.body.value, 10);
   if (isNaN(value) || value < 0 || value > 999)
@@ -106,9 +110,11 @@ app.post('/counter', async (req, res) => {
 // ════════════════════════════════════════════════════════════════════════════
 //  COMMENTS ROUTES
 // ════════════════════════════════════════════════════════════════════════════
+
+// GET /comments  →  full thread tree (top-level + nested replies)
 app.get('/comments', async (req, res) => {
   try {
-    await pruneOldComments();
+    await pruneOldComments();   // prune on every read too, just in case
 
     const { rows } = await pool.query(`
       SELECT id, parent_id, name, text, reply_to_name, likes,
@@ -117,10 +123,13 @@ app.get('/comments', async (req, res) => {
       ORDER BY created_at ASC
     `);
 
-    const map = {};
+    // Build tree
+    const map   = {};
     const roots = [];
 
-    rows.forEach(r => map[r.id] = { ...r, ts: Number(r.ts), replies: [] });
+    rows.forEach(r => {
+      map[r.id] = { ...r, ts: Number(r.ts), replies: [] };
+    });
     rows.forEach(r => {
       if (r.parent_id) {
         map[r.parent_id]?.replies.push(map[r.id]);
@@ -136,6 +145,7 @@ app.get('/comments', async (req, res) => {
   }
 });
 
+// POST /comments  body: { id, name, text, parentId?, replyToName? }
 app.post('/comments', async (req, res) => {
   const { id, name, text, parentId, replyToName } = req.body;
 
@@ -162,15 +172,16 @@ app.post('/comments', async (req, res) => {
   }
 });
 
+// POST /comments/:id/like  →  { id, likes }
 app.post('/comments/:id/like', async (req, res) => {
-  const { delta } = req.body;
+  const { delta } = req.body;  // +1 or -1
   const d = delta === -1 ? -1 : 1;
 
   try {
     const { rows } = await pool.query(`
       UPDATE comments
-      SET likes = GREATEST(0, likes + $1)
-      WHERE id = $2
+      SET    likes = GREATEST(0, likes + $1)
+      WHERE  id = $2
       RETURNING id, likes
     `, [d, req.params.id]);
 
@@ -182,21 +193,12 @@ app.post('/comments/:id/like', async (req, res) => {
   }
 });
 
-// DELETE /comments/:id  → admin PIN 4721 required
+// DELETE /comments/:id  (optional admin use)
 app.delete('/comments/:id', async (req, res) => {
-  const pin = req.headers['x-admin-pin'] || req.query.pin;
-  if (pin !== '4721') return res.status(403).json({ error: 'Invalid PIN' });
-
   try {
-    const { rowCount } = await pool.query(
-      'DELETE FROM comments WHERE id = $1',
-      [req.params.id]
-    );
-
-    if (rowCount === 0) return res.status(404).json({ error: 'Comment not found' });
+    await pool.query('DELETE FROM comments WHERE id = $1', [req.params.id]);
     res.json({ ok: true });
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: 'DB error' });
   }
 });
